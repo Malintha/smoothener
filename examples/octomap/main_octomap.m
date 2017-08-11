@@ -6,34 +6,32 @@ function main_octomap()
 TIMESCALE = 0.25;
 
 % read input files
-EXAMPLE = 'examples/octomap/warehouse4';
-discrete_plan_file = [EXAMPLE '.json'];
+EXAMPLE = '/home/mark/act/crazyswarm-planning/discrete/ecbs/test/swap_18-3';
+discrete_plan_file = [EXAMPLE '_sol.json'];
 octree_file = [EXAMPLE '.bt'];
-s = read_schedule(discrete_plan_file);
-[~, ~, N] = size(s);
+[schedule, confEllipsoids, obsEllipsoids] = read_schedule(discrete_plan_file);
+[~, ~, N] = size(schedule);
 bbox = read_octomap_bbox_mex(octree_file);
 
 % print some info about the discrete plan input
-analyze_schedule(s);
+analyze_schedule(schedule);
 
 % optional: clip the number of robots so it runs faster
 % N = 5;
-s = s(:,:,1:N);
+schedule = schedule(:,:,1:N);
+confEllipsoids = confEllipsoids(1:N,:);
+obsEllipsoids = obsEllipsoids(1:N,:);
+ellipsoid = [0.5 0.5 0.75];
+obs_ellipsoid = [0.3 0.3 0.3];
 
 % add extra stationary steps at begin and end for smooth acceleration
-s = cat(2, s(:,1,:), s(:,1,:), s, s(:,end,:));
+schedule = cat(2, schedule(:,1,:), schedule(:,1,:), schedule, schedule(:,end,:));
 
 % polynomial degree
 deg = 7;
 
 % how many derivatives must be continuous
 cont = 4;
-
-% robot-robot collision ellipsoid
-ellipsoid = [0.12 0.12 0.3];
-
-% robot-obstacle collision ellipsoid
-obs_ellipsoid = [0.15 0.15 0.15];
 
 % number of iterations of refinement
 iters = 2;
@@ -42,7 +40,7 @@ iters = 2;
 pp_obs_sep_fun = @(pps, obs_ellipsoid) pp_obs_sep_octomap(pps, obs_ellipsoid, octree_file);
 
 % main routine
-[pps, costs, corridors] = smoothener(s, bbox, deg, cont, TIMESCALE, ellipsoid, obs_ellipsoid, iters, pp_obs_sep_fun);
+[pps, costs, corridors] = smoothener(schedule, bbox, deg, cont, TIMESCALE, ellipsoid, obs_ellipsoid, iters, pp_obs_sep_fun);
 
 % Plot the results.
 % -----------------
@@ -67,7 +65,7 @@ patch(fv, ...
 % render the output
 for i=1:N
 	% plot the discrete plan
-	h = plot3n(s(:,:,i));
+	h = plot3n(schedule(:,:,i));
 
 	% plot the continuous trajectory
 	color = get(h, 'color');
