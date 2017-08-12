@@ -1,7 +1,7 @@
-# smoothener
+# smoothener-heterogeneous (Under development!!!)
 Convert multi-robot waypoint sequences into smooth piecewise polynomial trajectories.
 
-This repository contains a Matlab implementation of the continuous trajectory optimization stage
+This repository contains an expanded Matlab implementation of the continuous trajectory optimization stage
 of the algorithm described in:
 
 > *Downwash-Aware Trajectory Planning for Large Quadcopter Teams*
@@ -10,6 +10,10 @@ of the algorithm described in:
 >
 > Accepted at IEEE IROS 2017,
 > Preprint at [https://arxiv.org/abs/1704.04852](https://arxiv.org/abs/1704.04852)
+
+The extension allows for trajectory optimization of heterogenous agent sets.
+
+NOTE: This is currently under development and does not fully function!!!
 
 
 ## overview
