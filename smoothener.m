@@ -41,14 +41,11 @@
 function [all_pps, all_costs, all_corridors] = smoothener(...
 	paths, bbox, ...
 	deg, cont, timescale, ...
-	ellipsoid, obs_ellipsoid, ...
+	conf_ellipsoids, obs_ellipsoids, ...
 	iters, ...
 	pp_obs_sep_fun)
 
 	[dim, k, N] = size(paths);
-
-	lb = bbox(:,1) + obs_ellipsoid(:);
-	ub = bbox(:,2) - obs_ellipsoid(:);
 
 	% for a reasonable problem, cost should converge after ~5 iterations.
 	assert(iters >= 1);
@@ -68,10 +65,12 @@ function [all_pps, all_costs, all_corridors] = smoothener(...
 		tic;
 		if iter==1
 			% first iteration: decompose by segments
-			[A, b] = all_hyperplanes_waypoints_mex(paths, ellipsoid);
+            % TODO: mex
+			[A, b] = robot_hp_waypoints(paths,conf_ellipsoids);
 		else
 			% continuing iteration: decompose by pps
-			[A, b] = all_hyperplanes_pps(pps, ellipsoid);
+            % TODO: multiple ellipsoid sizes
+			[A, b] = all_hyperplanes_pps(pps, conf_ellipsoids(1,:));
 		end
 
 		if iter > 1
@@ -80,7 +79,7 @@ function [all_pps, all_costs, all_corridors] = smoothener(...
 			end
 		end
 
-		hs = pp_obs_sep_fun(pps, obs_ellipsoid);
+		hs = pp_obs_sep_fun(pps, obs_ellipsoids);
 
 		t_hyperplanes = toc;
 		fprintf('hyperplanes: %f sec\n', t_hyperplanes);
@@ -90,7 +89,10 @@ function [all_pps, all_costs, all_corridors] = smoothener(...
 		pps = cell(1,N);
 		iter_costs = zeros(1,N);
 		% parfor
-		parfor j=1:N
+		for j=1:N
+            lb = bbox(:,1) + obs_ellipsoids(j,:)';
+            ub = bbox(:,2) - obs_ellipsoids(j,:)';
+            
 			hs_slice = squeeze(hs(j,:));
 			step_n_faces = cellfun(@(a) size(a, 1), hs_slice);
 			assert(length(step_n_faces) == (k-1));
@@ -111,7 +113,7 @@ function [all_pps, all_costs, all_corridors] = smoothener(...
 				Arobots, brobots, ...
 				Aobs, bobs, ...
 				lb, ub,...
-				paths(:,:,j), deg, cont, timescale, ellipsoid, obs_ellipsoid);
+				paths(:,:,j), deg, cont, timescale, conf_ellipsoids(j,:), obs_ellipsoids(j,:));%[0.1 0.1 0.2], [0.1 0.1 0.1]);%
 
 			s = [];
 			s.Arobots = Arobots;

@@ -24,14 +24,16 @@ function [paths, confEllipsoids, obsEllipsoids] = read_schedule(fname)
 			paths(:,j,i) = paths(:,len,i);
         end
         %get ellipsoid sizes
-        ce = json.agents{i}.conflictEllipsoid;
-        confEllipsoids(i,1) = str2num(ce.rx);
-        confEllipsoids(i,2) = str2num(ce.ry);
-        confEllipsoids(i,3) = str2num(ce.rz);
-        oe = json.agents{i}.obstacleEllipsoid;
-        obsEllipsoids(i,1) = str2num(oe.rx);
-        obsEllipsoids(i,2) = str2num(oe.ry);
-        obsEllipsoids(i,3) = str2num(oe.rz);
+        if (isfield(json.agents{i},'conflictEllipsoid'))
+            ce = json.agents{i}.conflictEllipsoid;
+            confEllipsoids(i,1) = str2num(ce.rx);
+            confEllipsoids(i,2) = str2num(ce.ry);
+            confEllipsoids(i,3) = str2num(ce.rz);
+            oe = json.agents{i}.obstacleEllipsoid;
+            obsEllipsoids(i,1) = str2num(oe.rx);
+            obsEllipsoids(i,2) = str2num(oe.ry);
+            obsEllipsoids(i,3) = str2num(oe.rz);
+        end
 	end
 	assert(~any(isnan(paths(:))));
 end

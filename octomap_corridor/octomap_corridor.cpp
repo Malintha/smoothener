@@ -167,10 +167,10 @@ halfspace supporting_hyperplane(
 	return h;
 }
 
-polyhedron partition(octomap::OcTree const &ot, poly_sample const &s)
+polyhedron partition(octomap::OcTree const &ot, poly_sample const &s, float const ellipsoid[3])
 {
 	// TODO input
-	float const ellipsoid[3] = {0.15, 0.15, 0.15};
+	//float const ellipsoid[3] = {0.15, 0.15, 0.15};
 
 	// compute padded bounding box around traj sample
 	auto pt = [&s](int i) { return p3d(s[0][i], s[1][i], s[2][i]); };
@@ -270,8 +270,8 @@ int main(int argc, char *argv[])
 	Sentinel - 0xFFFFFFFF - for sanity check
 	*/
 
-	if (argc < 4) {
-		std::cerr << "usage: pptraj <octomap_path> <pps_path> <out_path>" << std::endl;
+	if (argc < 7) {
+		std::cerr << "usage: pptraj <octomap_path> <pps_path> <out_path> ellipsoid_rx ellipsoid_ry ellipsoid_rz" << std::endl;
 		return 1;
 	}
 
@@ -288,6 +288,12 @@ int main(int argc, char *argv[])
 		std::cerr << "error opening output file for writing: " << argv[3] << std::endl;
 		return 1;
 	}
+
+	// read ellipsoid //TODO error checking
+	float ellipsoid[3];
+	ellipsoid[0] = atof(argv[4]);
+	ellipsoid[1] = atof(argv[5]);
+	ellipsoid[2] = atof(argv[6]);
 
 	// read the header
 	int32_t const N = read<int32_t>(ppstream);
@@ -337,7 +343,7 @@ int main(int argc, char *argv[])
 	// compute all corridors
 	Array2D<polyhedron> corridors(N, K);
 	std::transform(samples.begin(), samples.end(), corridors.begin(),
-		[&ot](poly_sample const &s) { return partition(ot, s); });
+		[&ot,&ellipsoid](poly_sample const &s) { return partition(ot, s, ellipsoid); });
 
 	// write the corridors to the file
 	/*

@@ -6,10 +6,19 @@ function main_octomap()
 TIMESCALE = 0.25;
 
 % read input files
-EXAMPLE = '/home/mark/act/crazyswarm-planning/discrete/ecbs/test/swap_18-3';
-discrete_plan_file = [EXAMPLE '_sol.json'];
+EXAMPLE = 'examples/octomap/warehouse4';
+discrete_plan_file = [EXAMPLE '.json'];
 octree_file = [EXAMPLE '.bt'];
-[schedule, confEllipsoids, obsEllipsoids] = read_schedule(discrete_plan_file);
+
+%get schedule and ellipsoids
+[schedule, ~, ~] = read_schedule(discrete_plan_file);
+
+%this example doesnt actually have ellipsoids in solution file, so define
+%them here
+NumRobots = size(schedule,3);
+conf_ellipsoids = repmat([0.12 0.12 0.3],NumRobots,1);
+obs_ellipsoids = repmat([0.15 0.15 0.15],NumRobots,1);
+
 [~, ~, N] = size(schedule);
 bbox = read_octomap_bbox_mex(octree_file);
 
@@ -19,10 +28,8 @@ analyze_schedule(schedule);
 % optional: clip the number of robots so it runs faster
 % N = 5;
 schedule = schedule(:,:,1:N);
-confEllipsoids = confEllipsoids(1:N,:);
-obsEllipsoids = obsEllipsoids(1:N,:);
-ellipsoid = [0.5 0.5 0.75];
-obs_ellipsoid = [0.3 0.3 0.3];
+
+
 
 % add extra stationary steps at begin and end for smooth acceleration
 schedule = cat(2, schedule(:,1,:), schedule(:,1,:), schedule, schedule(:,end,:));
@@ -34,13 +41,13 @@ deg = 7;
 cont = 4;
 
 % number of iterations of refinement
-iters = 2;
+iters = 1;
 
 % robot/obstacle separating hyperplane function
-pp_obs_sep_fun = @(pps, obs_ellipsoid) pp_obs_sep_octomap(pps, obs_ellipsoid, octree_file);
+pp_obs_sep_fun = @(pps, obs_ellipsoids) pp_obs_sep_octomap(pps, obs_ellipsoids, octree_file);
 
 % main routine
-[pps, costs, corridors] = smoothener(schedule, bbox, deg, cont, TIMESCALE, ellipsoid, obs_ellipsoid, iters, pp_obs_sep_fun);
+[pps, costs, corridors] = smoothener(schedule, bbox, deg, cont, TIMESCALE, conf_ellipsoids, obs_ellipsoids, iters, pp_obs_sep_fun);
 
 % Plot the results.
 % -----------------
