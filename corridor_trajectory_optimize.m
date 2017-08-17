@@ -82,8 +82,9 @@ function [pp, cost] = corridor_trajectory_optimize(...
 
 		% offset the corridor bounding polyhedra by the ellipsoid
 		Astep = [Arobots(:,:,step)'; Aobs(:,:,step)'];
+        %bstep = [brobots(:,step);bobs(:,step)];
 		bstep = [polytope_erode_by_ellipsoid(Arobots(:,:,step)', brobots(:,step), ellipsoid); ...
-		         polytope_erode_by_ellipsoid(Aobs(:,:,step)', bobs(:,step), obs_ellipsoid)];
+		        polytope_erode_by_ellipsoid(Aobs(:,:,step)', bobs(:,step), obs_ellipsoid)];
 
 		% delete NaN inputs coming from "ragged" Aobs, bobs
 		nan_rows = isnan(bstep);

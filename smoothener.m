@@ -69,8 +69,9 @@ function [all_pps, all_costs, all_corridors] = smoothener(...
 			[A, b] = robot_hp_waypoints(paths,conf_ellipsoids);
 		else
 			% continuing iteration: decompose by pps
-            % TODO: multiple ellipsoid sizes
-			[A, b] = all_hyperplanes_pps(pps, conf_ellipsoids(1,:));
+            % TODO: mex
+            [A, b] = robot_hp_pps(pps,conf_ellipsoids,32);
+			%[A, b] = all_hyperplanes_pps(pps, conf_ellipsoids(1,:));
 		end
 
 		if iter > 1
@@ -89,7 +90,7 @@ function [all_pps, all_costs, all_corridors] = smoothener(...
 		pps = cell(1,N);
 		iter_costs = zeros(1,N);
 		% parfor
-		for j=1:N
+		parfor j=1:N
             lb = bbox(:,1) + obs_ellipsoids(j,:)';
             ub = bbox(:,2) - obs_ellipsoids(j,:)';
             
@@ -113,7 +114,7 @@ function [all_pps, all_costs, all_corridors] = smoothener(...
 				Arobots, brobots, ...
 				Aobs, bobs, ...
 				lb, ub,...
-				paths(:,:,j), deg, cont, timescale, conf_ellipsoids(j,:), obs_ellipsoids(j,:));%[0.1 0.1 0.2], [0.1 0.1 0.1]);%
+				paths(:,:,j), deg, cont, timescale, conf_ellipsoids(j,:), obs_ellipsoids(j,:));%[0.2 0.2 0.4], [0.2 0.2 0.2]);%
 
 			s = [];
 			s.Arobots = Arobots;

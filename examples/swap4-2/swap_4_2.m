@@ -6,7 +6,7 @@ function swap_4_2()
 TIMESCALE = 0.25;
 
 %plot afterwards
-PLOTTING = false;
+PLOTTING = true;
 
 % read input files
 EXAMPLE = '/home/mark/act/smoothener/examples/swap4-2/swap_4-2';
