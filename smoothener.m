@@ -66,12 +66,13 @@ function [all_pps, all_costs, all_corridors] = smoothener(...
 		if iter==1
 			% first iteration: decompose by segments
             % TODO: mex
-			[A, b] = robot_hp_waypoints(paths,conf_ellipsoids);
+			[A, b] = robot_hp_waypoints_libsvm(paths,conf_ellipsoids);
+            %[A, b] = robot_hp_waypoints(paths,conf_ellipsoids);
 		else
 			% continuing iteration: decompose by pps
             % TODO: mex
-            [A, b] = robot_hp_pps(pps,conf_ellipsoids,32);
-			%[A, b] = all_hyperplanes_pps(pps, conf_ellipsoids(1,:));
+            [A, b] = robot_hp_pps_libsvm(pps,conf_ellipsoids,16);
+            %[A, b] = robot_hp_pps(pps,conf_ellipsoids,32);
 		end
 
 		if iter > 1

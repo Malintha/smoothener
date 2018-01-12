@@ -18,8 +18,8 @@ Nrob = size(paths,3); % #robots
 Nsteps = size(paths,2) -1; % #time steps
 
 %generate untransformed-ellipsoid vertices for all vertices
-ntheta = 11;
-nphi = 11;
+ntheta = 15;
+nphi = 15;
 
 %unit sphere
 sphereVerts = ellipsoid_verts(1,1,1,ntheta,nphi);
@@ -38,35 +38,41 @@ end
 NellVerts = size(ellVerts,1); %number of vertices per ellipsoid
 
 %translate ellipsoids to create 'swept hull' vertices for each timestep
-stepVerts = zeros(2*NellVerts,size(ellVerts,2),Nrob, Nsteps);
+hullVerts = zeros(2*NellVerts,size(ellVerts,2),Nrob, Nsteps);
 for r = 1:Nrob
     for step = 1:Nsteps
         t1 = repmat(paths(:,step,r)',NellVerts,1);
         t2 = repmat(paths(:,step+1,r)',NellVerts,1);
-        stepVerts(1:NellVerts,:,r,step) = ellVerts(:,:,r) + t1;
-        stepVerts((NellVerts+1):end,:,r,step) = ellVerts(:,:,r) + t2;      
+        hullVerts(1:NellVerts,:,r,step) = ellVerts(:,:,r) + t1;
+        hullVerts((NellVerts+1):end,:,r,step) = ellVerts(:,:,r) + t2;      
     end
 end
 
 %labels for svm
-%   true for robot 1, false for robot 2
-labels = [true(2*NellVerts,1);false(2*NellVerts,1)];
+%   1 for robot 1, -1 for robot 2
+labels = [ones(2*NellVerts,1);-1*ones(2*NellVerts,1)];
 
 %initialize output structures
 A = nan(3,Nrob,Nrob,Nsteps);
 b = nan(Nrob,Nrob,Nsteps);
 
-%for each timestep
+%parfor each timestep
 parfor step = 1:Nsteps
-    %for every pair of robots
+    %renames for parfor
     stepA = nan(3,Nrob,Nrob);
     stepb = nan(Nrob,Nrob);
     
+    stepVerts = hullVerts(:,:,:,step);
+    
+    %for every pair of robots
     for i = 1:Nrob
         for j = (i+1):Nrob
-            %svm linear classifier
-            SVM = fitcsvm([stepVerts(:,:,i,step);stepVerts(:,:,j,step)], labels);
-
+            %vertex cloud of hulls
+            pairCloud = [stepVerts(:,:,i);stepVerts(:,:,j)];
+            
+            %svm
+            SVM = fitcsvm(pairCloud,labels);
+          
             %hyperplane params
             currA = SVM.Beta ./ norm(SVM.Beta);
             currb = SVM.Bias ./ norm(SVM.Beta);
@@ -82,7 +88,6 @@ parfor step = 1:Nsteps
     A(:,:,:,step) = stepA;
     b(:,:,step) = stepb;
 end
-
 
 end
 

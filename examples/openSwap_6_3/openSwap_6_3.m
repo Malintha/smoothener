@@ -37,7 +37,7 @@ deg = 7;
 cont = 4;
 
 % number of iterations of refinement
-iters = 3;
+iters = 2;
 
 % robot/obstacle separating hyperplane function
 pp_obs_sep_fun = @(pps, obs_ellipsoid) pp_obs_sep_octomap(pps, obs_ellipsoid, octree_file);
