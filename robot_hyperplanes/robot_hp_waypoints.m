@@ -1,11 +1,15 @@
-function [ A, b ] = robot_hp_waypoints( paths, ellipsoids )
+function [ A, b ] = robot_hp_waypoints( paths, types,cylinders )
 %ROBOT_HP_WAYPOINTS Calculates robot seperating hyperplanes
 %INPUT:
-%   paths: [#dimensions, #waypoints, #robots]
-%          paths(:,:,n) are the waypoints for robot n
-%   ellipsoids: [#robots, #dimensions]
-%          ellipsoids(n,:) the axis-aligned ellipsoid axes size for
-%          robot n
+%   paths: [3, #waypoints, #robots]
+%       paths(:,:,n) are the waypoints for robot n
+%   types: [n]
+%       types(n) is the type of robot traversing paths(:,:,n).
+%       Integer in range [1,#types]
+%   cylinders: [#types,#types, 3]
+%       cylinders(a,b,1) radius of cyl needed to separate type 'a' from 'b'
+%       cylinders(a,b,2) height 'a' needs to be above 'b'
+%       cylinders(a,b,3) height 'a' needs to be below 'b'
 %OUTPUT:
 %   A: [DIM x NROBOTS x NROBOTS x (NPTS - 1)] array of 
 %      hyperplane normal vectors for each robot-robot interaction
