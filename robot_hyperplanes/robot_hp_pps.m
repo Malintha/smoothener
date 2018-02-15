@@ -1,4 +1,4 @@
-function [ A, b ] = robot_hp_pps( pps, ellipsoids, Neval )
+function [ A, b ] = robot_hp_pps( pps, types,cylinders, Neval )
 %ROBOT_HP_PPS Calculates robot seperating hyperplanes
 %INPUT:
 %   pps: {#robots} cell array of Matlab ppform structs
@@ -24,27 +24,6 @@ Nsteps = pps{1}.pieces; % #time steps
 dim = pps{1}.dim;
 Nbreaks = pps{1}.breaks;
 
-%% generate untransformed-ellipsoid vertices
-ntheta = 11;
-nphi = 11;
-%unit sphere
-sphereVerts = ellipsoid_verts(1,1,1,ntheta,nphi);
-%get ellipsoids by scaling sphere
-ellVerts = zeros(size(sphereVerts,1),3,Nrob);
-for r = 1:Nrob
-    ellVerts(:,:,r) = [sphereVerts(:,1).*ellipsoids(r,1),...
-                       sphereVerts(:,2).*ellipsoids(r,2),...
-                       sphereVerts(:,3).*ellipsoids(r,3)];
-end
-
- %TODO ABOVE: uniform meshes for ellipsoids. 
- %  http://persson.berkeley.edu/distmesh/
-
-NellVerts = size(ellVerts,1); %number of vertices per ellipsoid
-
-%% generate trajectory hulls
-%   by transforming ellipsoids along sampled pps
-
 for i=2:Nrob
     assert(pps{i}.dim == dim);
     assert(pps{i}.pieces == Nsteps);
@@ -52,26 +31,26 @@ for i=2:Nrob
 end
 
 %translate ellipsoids to create 'swept hull' vertices for each timestep
-hullVerts = zeros(Neval*NellVerts,size(ellVerts,2),Nrob, Nsteps);
-for r = 1:Nrob
-    for step = 1:Nsteps
-        %sample pps
-        transforms = pp_sample_piece(pps{r},step,Neval);
-        %for each sample, place ellipsoid
-        for t = 1:Neval
-            tf = repmat(transforms(:,t)',NellVerts,1);
-            s = (t-1)*NellVerts + 1; 
-            e = t*NellVerts;
-            hullVerts(s:e,:,r,step) = ellVerts(:,:,r) + tf;
-        end     
-    end
-end
+% hullVerts = zeros(Neval*NellVerts,size(ellVerts,2),Nrob, Nsteps);
+% for r = 1:Nrob
+%     for step = 1:Nsteps
+%         %sample pps
+%         transforms = pp_sample_piece(pps{r},step,Neval);
+%         %for each sample, place ellipsoid
+%         for t = 1:Neval
+%             tf = repmat(transforms(:,t)',NellVerts,1);
+%             s = (t-1)*NellVerts + 1; 
+%             e = t*NellVerts;
+%             hullVerts(s:e,:,r,step) = ellVerts(:,:,r) + tf;
+%         end     
+%     end
+% end
 
 %% Compute hyperplanes via SVM
 
 %labels for svm
-%   true for robot 1, false for robot 2
-labels = [true(Neval*NellVerts,1);false(Neval*NellVerts,1)];
+%   1 for robot 1, -1 for robot 2
+labels = [ones(Neval*NellVerts,1);-1*ones(Neval*NellVerts,1)];
 
 %initialize output structures
 A = nan(3,Nrob,Nrob,Nsteps);
@@ -82,21 +61,36 @@ parfor step = 1:Nsteps
     %renames for parfor
     stepA = nan(3,Nrob,Nrob);
     stepb = nan(Nrob,Nrob);
-    stepVerts = hullVerts(:,:,:,step);
     
     %compute svm for every pair of robots
     for i = 1:Nrob
         for j = (i+1):Nrob
-            %svm linear classifier
-            SVM = fitcsvm([stepVerts(:,:,i);stepVerts(:,:,j)], labels);
+            %sample from trajectory
+            traj_i = pp_sample_piece(pps{i},step,Neval);
+            traj_j = pp_sample_piece(pps{j},step,Neval);
+            
+            %compute conflict hull from perspective of agent i
+            [hull] = swept_cyl_verts(cylinders(types(i),types(j),:), traj_i');
+
+            %vertex cloud for hull + waypoints for agent j
+            pairCloud = [hull; traj_j'];
+
+            %labels for cloud, 1 for robot i, -1 for j
+            labels = [ones(size(hull,1),1);-1*ones(size(traj_j,2),1)];
+
+            %train svm to get hyperplane
+            SVM = svmtrain(labels,pairCloud,'-q -t 0');
 
             %hyperplane params
-            currA = SVM.Beta ./ norm(SVM.Beta);
-            currb = SVM.Bias ./ norm(SVM.Beta);
-            
-            stepA(:,i,j) = -1*currA;
+            suppVecs = pairCloud(SVM.sv_indices,:);
+            w = SVM.sv_coef' * suppVecs;
+            normw = norm(w);
+            currA = w/normw;
+            currb = (-1*SVM.rho)/normw;
+
+            stepA(:,i,j) = currA;
             stepb(i,j) = currb;
-            stepA(:,j,i) = currA;
+            stepA(:,j,i) = -1*currA;
             stepb(j,i) = -1*currb;
 
         end
