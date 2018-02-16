@@ -35,7 +35,9 @@ for step = 1:Nsteps
     %for every pair of robots
     for i = 1:Nrob
         for j = (i+1):Nrob
-            %compute conflict hull from perspective of agent i
+            %SHP constraint for j
+            %compute conflict hull from i's perspective
+            %   j's path must stay out of this hull
             [hull] = swept_cyl_verts(cylinders(types(i),types(j),:),...
                                      [paths(:,step,i)';paths(:,step+1,i)']);
                                  
@@ -47,19 +49,40 @@ for step = 1:Nsteps
 
             %train svm to get hyperplane
             SVM = svmtrain(labels,pairCloud,'-q -t 0');
-          
-            %hyperplane params
+            %extract params
             suppVecs = pairCloud(SVM.sv_indices,:);
             w = SVM.sv_coef' * suppVecs;
             normw = norm(w);
             currA = w/normw;
             currb = (-1*SVM.rho)/normw;
             
-            stepA(:,i,j) = currA;
-            stepb(i,j) = currb;
-            stepA(:,j,i) = -1*currA;
-            stepb(j,i) = -1*currb;
+            
+            stepA(:,j,i) = -currA;
+            stepb(j,i) = -currb;
+            
+            %SHP constraint for i
+            %compute conflict hull from j's perspective
+            %   i's path must stay out of this hull
+            [hull] = swept_cyl_verts(cylinders(types(j),types(i),:),...
+                                     [paths(:,step,j)';paths(:,step+1,j)']);
+                                 
+            %vertex cloud for hull + waypoints for agent i
+            pairCloud = [hull; paths(:,step,i)';paths(:,step+1,i)'];
+            
+            %labels for cloud, 1 for robot i, -1 for j
+            labels = [ones(size(hull,1),1);-1;-1];
 
+            %train svm to get hyperplane
+            SVM = svmtrain(labels,pairCloud,'-q -t 0');
+
+            %hyperplane params
+            suppVecs = pairCloud(SVM.sv_indices,:);
+            w = SVM.sv_coef' * suppVecs;
+            normw = norm(w);
+            currA = w/normw;
+            currb = (-1*SVM.rho)/normw;
+            stepA(:,i,j) = -currA;
+            stepb(i,j) = -currb;
         end
     end
     

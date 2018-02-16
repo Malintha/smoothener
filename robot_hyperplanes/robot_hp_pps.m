@@ -30,27 +30,7 @@ for i=2:Nrob
     assert(all(abs(pps{i}.breaks - Nbreaks) < 10e-9));
 end
 
-%translate ellipsoids to create 'swept hull' vertices for each timestep
-% hullVerts = zeros(Neval*NellVerts,size(ellVerts,2),Nrob, Nsteps);
-% for r = 1:Nrob
-%     for step = 1:Nsteps
-%         %sample pps
-%         transforms = pp_sample_piece(pps{r},step,Neval);
-%         %for each sample, place ellipsoid
-%         for t = 1:Neval
-%             tf = repmat(transforms(:,t)',NellVerts,1);
-%             s = (t-1)*NellVerts + 1; 
-%             e = t*NellVerts;
-%             hullVerts(s:e,:,r,step) = ellVerts(:,:,r) + tf;
-%         end     
-%     end
-% end
-
 %% Compute hyperplanes via SVM
-
-%labels for svm
-%   1 for robot 1, -1 for robot 2
-labels = [ones(Neval*NellVerts,1);-1*ones(Neval*NellVerts,1)];
 
 %initialize output structures
 A = nan(3,Nrob,Nrob,Nsteps);
@@ -69,14 +49,15 @@ parfor step = 1:Nsteps
             traj_i = pp_sample_piece(pps{i},step,Neval);
             traj_j = pp_sample_piece(pps{j},step,Neval);
             
+            %SHP separating j from i
             %compute conflict hull from perspective of agent i
             [hull] = swept_cyl_verts(cylinders(types(i),types(j),:), traj_i');
-
+                                 
             %vertex cloud for hull + waypoints for agent j
             pairCloud = [hull; traj_j'];
-
+            
             %labels for cloud, 1 for robot i, -1 for j
-            labels = [ones(size(hull,1),1);-1*ones(size(traj_j,2),1)];
+            labels = [ones(size(hull,1),1);-1;-1];
 
             %train svm to get hyperplane
             SVM = svmtrain(labels,pairCloud,'-q -t 0');
@@ -87,11 +68,32 @@ parfor step = 1:Nsteps
             normw = norm(w);
             currA = w/normw;
             currb = (-1*SVM.rho)/normw;
+            %negative sign to orient normal towards agent i
+            stepA(:,i,j) = -currA;
+            stepb(i,j) = -currb;
+            
+            %HP separating i from j
+            %compute conflict hull from perspective of agent i
+            [hull] = swept_cyl_verts(cylinders(types(j),types(i),:),traj_j');
+                                 
+            %vertex cloud for hull + waypoints for agent i
+            pairCloud = [hull; traj_i'];
+            
+            %labels for cloud, 1 for robot i, -1 for j
+            labels = [ones(size(hull,1),1);-1;-1];
 
-            stepA(:,i,j) = currA;
-            stepb(i,j) = currb;
-            stepA(:,j,i) = -1*currA;
-            stepb(j,i) = -1*currb;
+            %train svm to get hyperplane
+            SVM = svmtrain(labels,pairCloud,'-q -t 0');
+
+            %hyperplane params
+            suppVecs = pairCloud(SVM.sv_indices,:);
+            w = SVM.sv_coef' * suppVecs;
+            normw = norm(w);
+            currA = w/normw;
+            currb = (-1*SVM.rho)/normw;
+            %negative sign to orient normal towards agent j
+            stepA(:,j,i) = -currA;
+            stepb(j,i) = -currb;
 
         end
     end
