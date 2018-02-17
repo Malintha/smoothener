@@ -39,6 +39,14 @@ r2_path = [-4, 1,  0;...
            -0, 5,  -4;...
            1, 6,  -5];
 
+r1_path = [0, 0,  3;...
+           0, 2,  3; ...
+           0, 4,  3];
+
+r2_path = [3, 0,  3;...
+           3, 2,  3;...
+           3, 4,  3];
+
 nsteps = size(r1_path,1) - 1;
 
 
@@ -59,6 +67,8 @@ cylinders(2,2,:) = dummy_cyl;
 
 %hp computation for each timestep;
 [A,b] = robot_hp_waypoints(paths,types,cylinders);
+% A = -A;
+% b = -b;
 
 %hp computations assuming waypoints are trajectory samples
 [r1_verts] = swept_cyl_verts(r1r2_cyl,r1_path);
@@ -165,8 +175,8 @@ for t = 1:nsteps
     %hull for robot 2 (j)
 %     hull_hands{t,2}.Visible = 'on';
     %Visualize constraint for agent i (1) interacting with j (2)
-    Astep = A(:,1,2,t);
-    bstep = b(1,2,t);
+    Astep = A(:,1,2,t)
+    bstep = b(1,2,t)
     [hpx,hpy,hpz] = hyperplane_surf(Astep,bstep,xrange,yrange,zrange,xyzstep);
     u = Astep(1)*ones(size(hpx,1),size(hpx,2));
     v = Astep(2)*ones(size(hpx,1),size(hpx,2));
@@ -178,8 +188,8 @@ for t = 1:nsteps
 %     hull_hands{t,2}.Visible = 'off';
 %     hull_hands{t,1}.Visible = 'on';
     %Visualize constraint for agent j interacting with i
-    Astep = A(:,2,1,t);
-    bstep = b(2,1,t);
+    Astep = A(:,2,1,t)
+    bstep = b(2,1,t)
     [hpx,hpy,hpz] = hyperplane_surf(Astep,bstep,xrange,yrange,zrange,xyzstep);
     u = Astep(1)*ones(size(hpx,1),size(hpx,2));
     v = Astep(2)*ones(size(hpx,1),size(hpx,2));
@@ -230,25 +240,4 @@ function [x,y,z] = robot_cylinder(rcyl,pos)
     y = cy + pos(2);
     z = (cz * (rcyl(2)+rcyl(3))) + pos(3) - rcyl(3);
 
-end
-
-function [x,y,z] = hyperplane_surf(A,b,xrange,yrange,zrange,xyzstep)
-
-    maxdim = find(abs(A)==max(abs(A)));
-    %solve for dim that has largest normal coeff (avoid 1/coeff making huge
-    %numbers)
-    if (maxdim == 1)
-        [z, y] = meshgrid(zrange(1):xyzstep:zrange(2),...
-                    yrange(1):xyzstep:yrange(2)); % Generate z and y data
-        x = (-1/A(1))*(A(3)*z + A(2)*y + b); % Solve for x data
-    elseif (maxdim == 2)
-        [x, z] = meshgrid(xrange(1):xyzstep:xrange(2),...
-                    zrange(1):xyzstep:zrange(2)); % Generate x and z data
-        y = (-1/A(2))*(A(1)*x + A(3)*z + b); % Solve for y data
-    else
-        [x, y] = meshgrid(xrange(1):xyzstep:xrange(2),...
-                    yrange(1):xyzstep:yrange(2)); % Generate x and y data
-        z = (-1/A(3))*(A(1)*x + A(2)*y + b); % Solve for z data
-    end
-    
 end

@@ -57,8 +57,8 @@ for step = 1:Nsteps
             currb = (-1*SVM.rho)/normw;
             
             
-            stepA(:,j,i) = -currA;
-            stepb(j,i) = -currb;
+            stepA(:,j,i) = currA;
+            stepb(j,i) = currb;
             
             %SHP constraint for i
             %compute conflict hull from j's perspective
@@ -69,7 +69,7 @@ for step = 1:Nsteps
             %vertex cloud for hull + waypoints for agent i
             pairCloud = [hull; paths(:,step,i)';paths(:,step+1,i)'];
             
-            %labels for cloud, 1 for robot i, -1 for j
+            %labels for cloud, 1 for robot j, -1 for i
             labels = [ones(size(hull,1),1);-1;-1];
 
             %train svm to get hyperplane

@@ -19,9 +19,9 @@
 %   pp:   a matlab ppform struct containing the trajectory
 %   cost: the cost value of the quadratic program
 %
-function [pp, cost] = corridor_trajectory_optimize_devel(...
+function [pp, cost] = corridor_trajectory_optimize(...
 	Arobots, brobots, Aobs, bobs, lb, ub, ...
-	path, deg, cont, timescale, conf_cylinders, obs_cylinder,id)
+	path, deg, cont, timescale, ellipsoid, obs_ellipsoid)
 
 	[dim, ~, steps] = size(Arobots);
 	assert(size(path, 2) == steps + 1);
@@ -29,24 +29,15 @@ function [pp, cost] = corridor_trajectory_optimize_devel(...
 	goal = path(:,end);
 	order = deg + 1;
 
-	%ellipsoid = diag(ellipsoid);
-    %for now just use ellipsoid for robot/env specification
-	obs_ellipsoid = diag(obs_cylinder(1)*ones(3,1));
-    
-    %%HACK
-
-%     Arobots = -Arobots;
-%     brobots = -brobots;
-
+	ellipsoid = diag(ellipsoid);
+	obs_ellipsoid = diag(obs_ellipsoid);
 
 	% hack - so we can use 7th degree
 	ends_zeroderivs = min(3,cont);
 
 	% TODO move this outside
-%     brobots = brobots';
 	me = find(isnan(brobots(:,1)));
 	assert(length(me) == 1);
-    
 	brobots(me,:) = [];
 	Arobots(:,me,:) = [];
 
@@ -69,8 +60,6 @@ function [pp, cost] = corridor_trajectory_optimize_devel(...
 
 	% number of decision variables
 	nvars = dim * order * steps;
-    lb
-    ub
 	lb = repmat(lb, steps * order, 1);
 	ub = repmat(ub, steps * order, 1);
 
@@ -93,40 +82,23 @@ function [pp, cost] = corridor_trajectory_optimize_devel(...
 
 		% offset the corridor bounding polyhedra by the ellipsoid
 		Astep = [Arobots(:,:,step)'; Aobs(:,:,step)'];
-        bstep = [brobots(:,step);bobs(:,step)];
-%         bstep = [brobots(:,step);...
-%                 polytope_erode_by_ellipsoid(Aobs(:,:,step)', bobs(:,step), obs_ellipsoid)];
-% 		bstep = [polytope_erode_by_ellipsoid(Arobots(:,:,step)', brobots(:,step), obs_ellipsoid); ...
-% 		        polytope_erode_by_ellipsoid(Aobs(:,:,step)', bobs(:,step), obs_ellipsoid)];
+        %bstep = [brobots(:,step);bobs(:,step)];
+		bstep = [polytope_erode_by_ellipsoid(Arobots(:,:,step)', brobots(:,step), ellipsoid); ...
+		        polytope_erode_by_ellipsoid(Aobs(:,:,step)', bobs(:,step), obs_ellipsoid)];
 
 		% delete NaN inputs coming from "ragged" Aobs, bobs
 		nan_rows = isnan(bstep);
 		Astep(nan_rows,:) = [];
 		bstep(nan_rows) = [];
-        
+
 		% try to eliminate redundant half-space constraints
 		interior_pt = (path(:,step) + path(:,step+1)) ./ 2;
 		[Astep,bstep] = noredund(Astep,bstep,interior_pt);
-        
-        %DEBUG. Try to visualize constraints
-%         for d = 1:size(bstep)
-%             [debx,deby,debz] = hyperplane_surf(Astep(d,:),bstep(d),[-5,5],[-1,7],[-1,7],2);
-%             u = Astep(d,1)*ones(size(debx,1),size(debx,2));
-%             v = Astep(d,2)*ones(size(debx,1),size(debx,2));
-%             w = Astep(d,3)*ones(size(debx,1),size(debx,2));
-%             quiver3(debx,deby,debz,u,v,w,0.1);
-%             hold on;
-%             plot3([path(1,step);path(1,step+1)],[path(2,step);path(2,step+1)],[path(3,step);path(3,step+1)],'-go','LineWidth',7);
-%             surf(debx,deby,debz,'FaceAlpha',0.5,'FaceColor',[0.4,0.1,0.4],'edgecolor','none');
-%             debug = 0;
-%         end
-%         hold off;
-%         
+
 		% add bounding polyhedron constraints on control points
 		Aineq = [Aineq; kron(dim_select, kron(eye(order), Astep))];
 		bineq = [bineq; repmat(bstep, order, 1)];
-        init
-        goal
+
 		if step == 1
 			% initial position and 0 derivatives
 			Aeq = [Aeq; kron(eye(dim), t0 * bern') * dim_collect];
@@ -162,12 +134,11 @@ function [pp, cost] = corridor_trajectory_optimize_devel(...
 
 	Aineq = cat(1, Aineq{:});
 	Aeq = cat(1, Aeq{:});
-% 	assert(size(Aineq, 2) == nvars);
-% 	assert(size(Aineq, 1) == length(bineq));
+	assert(size(Aineq, 2) == nvars);
+	assert(size(Aineq, 1) == length(bineq));
 	assert(size(Aeq, 2) == nvars);
 	assert(size(Aeq, 1) == length(beq));
 
-    
 	coef_cost = ...
 		1 * int_sqr_deriv_matrix(deg, 2, timescale) + ...
 		0 * int_sqr_deriv_matrix(deg, 3, timescale) + ...
@@ -177,7 +148,7 @@ function [pp, cost] = corridor_trajectory_optimize_devel(...
 	Q = kron(eye(steps), piece_cost);
 	Q = Q + Q'; % matlab complains, but error is small. TODO track down source.
 
-	options = optimoptions('quadprog', 'Display', 'final');
+	options = optimoptions('quadprog', 'Display', 'off');
 	options.TolCon = options.TolCon / 10;
 
 	% DEBUGGING INFEASIBLE
