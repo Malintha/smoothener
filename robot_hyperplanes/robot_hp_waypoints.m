@@ -54,7 +54,7 @@ for step = 1:Nsteps
             w = SVM.sv_coef' * suppVecs;
             normw = norm(w);
             currA = w/normw;
-            currb = (-1*SVM.rho)/normw;
+            currb = (SVM.rho)/normw;
             
             
             stepA(:,j,i) = currA;
@@ -80,9 +80,9 @@ for step = 1:Nsteps
             w = SVM.sv_coef' * suppVecs;
             normw = norm(w);
             currA = w/normw;
-            currb = (-1*SVM.rho)/normw;
-            stepA(:,i,j) = -currA;
-            stepb(i,j) = -currb;
+            currb = (SVM.rho)/normw;
+            stepA(:,i,j) = currA;
+            stepb(i,j) = currb;
         end
     end
     

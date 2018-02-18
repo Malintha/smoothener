@@ -68,10 +68,10 @@ for step = 1:Nsteps
             w = SVM.sv_coef' * suppVecs;
             normw = norm(w);
             currA = w/normw;
-            currb = (-1*SVM.rho)/normw;
+            currb = (SVM.rho)/normw;
             %negative sign to orient normal towards agent j
-            stepA(:,j,i) = -currA;
-            stepb(j,i) = -currb;
+            stepA(:,j,i) = currA;
+            stepb(j,i) = currb;
             
             %SHP constraint for i
             %compute conflict hull from j's perspective
@@ -92,10 +92,10 @@ for step = 1:Nsteps
             w = SVM.sv_coef' * suppVecs;
             normw = norm(w);
             currA = w/normw;
-            currb = (-1*SVM.rho)/normw;
+            currb = (SVM.rho)/normw;
             %negative sign to orient normal towards agent i
-            stepA(:,i,j) = -currA;
-            stepb(i,j) = -currb;
+            stepA(:,i,j) = currA;
+            stepb(i,j) = currb;
 
         end
     end

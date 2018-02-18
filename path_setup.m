@@ -1,0 +1,5 @@
+addpath(genpath('external/jsonlab'))
+addpath(genpath('external/stlread'))
+addpath(genpath('external/libsvm/matlab'))
+addpath(genpath('robot_hyperplanes'))
+addpath(genpath('utils'))
