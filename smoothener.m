@@ -64,6 +64,9 @@ clear; close all;
 % ~~~~~~ Env file for octomap ~~~~~~
 map = '/home/mark/act/smoothener/examples/swap4/map.bt';
 
+% ~~~~~~ STL file for plotting ~~~~~~
+stl_file = '/home/mark/act/smoothener/examples/swap4/map.stl';
+
 % ~~~~~~ paths Input ~~~~~~
 paths = read_schedule('./examples/swap4/discreteSchedule.json');
 [dim, k, N] = size(paths);
@@ -85,14 +88,16 @@ conf_cylinders(1,2,:) = [0.20,0.30,0.60];
 conf_cylinders(2,1,:) = [0.20,0.60,0.30];
 
 conf_cylinders(1,1,:) = [0.15,0.30,0.30];
-conf_cylinders(2,2,:) = [0.25,0.50,0.50];
+conf_cylinders(2,2,:) = [0.25,0.50,0.50]*.75;
+
+conf_cylinders = conf_cylinders;
 
 % ~~~~~~ obs_cylinders Input NOTE: CURRENTLY USING ELLIPSOIDS ~~~~~~
 obs_cylinders = ones(ntypes,3);
 %obs_cylinders(i,:) = [radius,above,below] for environment
 %Right now it is [rx,ry,rz] for ellipsoids
-obs_cylinders(1,:) = [0.15,0.15,0.15]*.1;
-obs_cylinders(2,:) = [0.25,0.25,0.25]*.1;
+obs_cylinders(1,:) = [0.15,0.15,0.15];
+obs_cylinders(2,:) = [0.25,0.25,0.25]*0.5;
 %hack for ellipsoid input to octomap separation function
 obs_ellipsoids = zeros(N,3);
 for n = 1:N
@@ -100,9 +105,10 @@ for n = 1:N
 end
 
 % ~~~~~~ bbox Input ~~~~~~
-bbox = [-5.5, 2.0;...
-        -3.0, 3.5;...
-         0.0, 2.5];
+bbox = read_octomap_bbox_mex(map);
+% bbox = [-5.5, 2.0;...
+%         -3.0, 3.5;...
+%          0.0, 2.5];
      
 % bbbuffer = 10;
 % bbox = [min(min(paths(1,:,:))) - bbbuffer,max(max(paths(1,:,:)) + bbbuffer);...
@@ -118,6 +124,7 @@ Neval = 32; %number of samples on pps separation
 
 % ~~~~~~ pp obstacle separation function ~~~~~~
 pp_obs_sep_fun = @(poly,elip) pp_obs_sep_octomap(poly,elip,map);
+% pp_obs_sep_fun = @pp_obs_sep_none;
 
 %% Smoothener
 [dim, k, N] = size(paths);
@@ -187,7 +194,7 @@ for iter=1:iters
             Arobots, brobots, ...
             Aobs, bobs, ...
             lb, ub,...
-            paths(:,:,j), deg, cont, timescale, obs_cylinders(types(j),:));%[0.2 0.2 0.4], [0.2 0.2 0.2]);%
+            paths(:,:,j), deg, cont, timescale, obs_cylinders(types(j),:),j);%[0.2 0.2 0.4], [0.2 0.2 0.2]);%
 
         s = [];
         s.Arobots = Arobots;
@@ -205,18 +212,65 @@ for iter=1:iters
 end
 
 %% Plot?
+close all;
+%sample trajectories
+duration = pps{1}.breaks(end);
+sr = 0.05;
+t = 0:sr:duration;
+trajplots = cell(N,1);
+robcolors = cell(N,1);
+for i=1:size(paths,3)
+    trajplots{i} = ppval(pps{i}, t)';
+end
 
+%plot path + trajectory
 for i=1:size(paths,3)	% [14,16,17,31]		
     h = plot3n(paths(:,:,i));
     hold on;
-    color = get(h, 'color');
-    %delete(h);
-    duration = pps{i}.breaks(end);
-    t = 0:0.05:duration;
-    x = ppval(pps{i}, t);
-    h = plot3n(x, 'color', color, 'LineWidth', 3);
-%     lastPos = ppval(pps{i}, duration);
-%     scatter3(lastPos(1), lastPos(2), lastPos(3),50,'k','filled');
-%     firstPos = ppval(pps{i}, 0);
-%     scatter3(firstPos(1), firstPos(2), firstPos(3),50,'k', 'square');%'g','filled');
+    robcolor{i} = get(h, 'color');
+    h = plot3n(trajplots{i}', 'color', robcolor{i}, 'LineWidth', 3);
 end
+
+%plot map
+fv = stlread(stl_file);
+	patch(fv, ...
+			'FaceColor', [0.4 0.4 0.4], 'EdgeColor', 'none', ...
+			'SpecularStrength', 0.1, 'AmbientStrength', 0.5, 'facealpha',0.6);
+
+%set axis props
+ax = gca;
+xlabel('x')
+ylabel('y')
+zlabel('z')
+ax.Projection = 'perspective';
+ax.DataAspectRatioMode = 'manual';
+ax.DataAspectRatio = [1 1 1];
+axis vis3d;
+
+% Animate? Using ellipsoid atm
+
+%in = input('Animate: ')
+
+%robot hull
+robots = cell(N,1); %{xyz,handle}
+for n=1:N
+    [sx,sy,sz] = ellipsoid(paths(1,1,n),paths(2,1,n),paths(3,1,n),obs_cylinders(types(n),1),obs_cylinders(types(n),2),obs_cylinders(types(n),3));
+    r_color = zeros(size(sz,1),size(sz,2),3);
+    r_color(:,:,1) = repmat(linspace((robcolor{n}(1)/5),robcolor{n}(1),size(sx,1))',1,size(sx,2)); % red
+    r_color(:,:,2) = repmat(linspace((robcolor{n}(2)/5),robcolor{n}(2),size(sy,1))',1,size(sy,2)); % green
+    r_color(:,:,3) = repmat(linspace((robcolor{n}(3)/5),robcolor{n}(3),size(sz,1))',1,size(sz,2));
+    robots{n} = surf(ax,sx,sy,sz,r_color,'EdgeColor', 'none');
+end
+
+for time = 2:numel(t)
+    for n = 1:N
+        dx = trajplots{n}(time,1) - trajplots{n}(time-1,1);
+        dy = trajplots{n}(time,2) - trajplots{n}(time-1,2);
+        dz = trajplots{n}(time,3) - trajplots{n}(time-1,3);
+        robots{n}.XData = robots{n}.XData + dx;
+        robots{n}.YData = robots{n}.YData + dy;
+        robots{n}.ZData = robots{n}.ZData + dz;
+    end
+    pause(0.033);
+end
+

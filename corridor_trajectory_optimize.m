@@ -21,7 +21,7 @@
 %
 function [pp, cost] = corridor_trajectory_optimize(...
 	Arobots, brobots, Aobs, bobs, lb, ub, ...
-	path, deg, cont, timescale, obs_cylinder)
+	path, deg, cont, timescale, obs_cylinder,id)
 
 	[dim, ~, steps] = size(Arobots);
 	assert(size(path, 2) == steps + 1);
@@ -84,9 +84,9 @@ function [pp, cost] = corridor_trajectory_optimize(...
 
 		% offset the corridor bounding polyhedra by the ellipsoid
 		Astep = [Arobots(:,:,step)'; Aobs(:,:,step)'];
-        bstep = [brobots(:,step);bobs(:,step)];
-%         bstep = [brobots(:,step);...
-%                 polytope_erode_by_ellipsoid(Aobs(:,:,step)', bobs(:,step), obs_ellipsoid)];
+%         bstep = [brobots(:,step);bobs(:,step)];
+        bstep = [brobots(:,step);...
+                polytope_erode_by_ellipsoid(Aobs(:,:,step)', bobs(:,step), obs_ellipsoid)];
 % 		bstep = [polytope_erode_by_ellipsoid(Arobots(:,:,step)', brobots(:,step), obs_ellipsoid); ...
 % 		        polytope_erode_by_ellipsoid(Aobs(:,:,step)', bobs(:,step), obs_ellipsoid)];
 
@@ -95,22 +95,24 @@ function [pp, cost] = corridor_trajectory_optimize(...
 		Astep(nan_rows,:) = [];
 		bstep(nan_rows) = [];
         
-                %DEBUG. Try to visualize constraints
-%         for d = 1:size(bstep)
-%             [debx,deby,debz] = hyperplane_surf(-Astep(d,:),bstep(d),[-5,5],[-1,7],[-1,7],2);
-%             u = -Astep(d,1)*ones(size(debx,1),size(debx,2));
-%             v = -Astep(d,2)*ones(size(debx,1),size(debx,2));
-%             w = -Astep(d,3)*ones(size(debx,1),size(debx,2));
-%             quiver3(debx,deby,debz,u,v,w,0.1);
-%             hold on;
-%             plot3([path(1,step);path(1,step+1)],[path(2,step);path(2,step+1)],[path(3,step);path(3,step+1)],'-go','LineWidth',7);
-%             surf(debx,deby,debz,'FaceAlpha',0.5,'FaceColor',[0.4,0.1,0.4],'edgecolor','none');
+        %DEBUG. Try to visualize constraints
+%         if (id == 4)
+%             for d = 1:size(bstep)
+%                 [debx,deby,debz] = hyperplane_surf(-Astep(d,:),bstep(d),[-5,5],[-1,7],[-1,7],2);
+%                 u = -Astep(d,1)*ones(size(debx,1),size(debx,2));
+%                 v = -Astep(d,2)*ones(size(debx,1),size(debx,2));
+%                 w = -Astep(d,3)*ones(size(debx,1),size(debx,2));
+%                 quiver3(debx,deby,debz,u,v,w,0.1);
+%                 hold on;
+%                 plot3([path(1,step);path(1,step+1)],[path(2,step);path(2,step+1)],[path(3,step);path(3,step+1)],'-go','LineWidth',7);
+%                 surf(debx,deby,debz,'FaceAlpha',0.5,'FaceColor',[0.4,0.1,0.4],'edgecolor','none');
+%             end
+%             hold off;
 %         end
-%         hold off;
         
 		% try to eliminate redundant half-space constraints
-% 		interior_pt = (path(:,step) + path(:,step+1)) ./ 2;
-% 		[Astep,bstep] = noredund(Astep,bstep,interior_pt);
+		interior_pt = (path(:,step) + path(:,step+1)) ./ 2;
+		[Astep,bstep] = noredund(Astep,bstep,interior_pt);
         
 		% add bounding polyhedron constraints on control points
 		Aineq = [Aineq; kron(dim_select, kron(eye(order), Astep))];

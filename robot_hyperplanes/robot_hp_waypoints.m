@@ -46,9 +46,13 @@ for step = 1:Nsteps
             
             %labels for cloud, 1 for robot i, -1 for j
             labels = [ones(size(hull,1),1);-1;-1];
-
+            
+            %DEEEEEEEEEEEEEEBBBBBBUUUUUUUUUUUGGGGGGGGGGGg
+%             pairCloud = [paths(:,step,i)';paths(:,step+1,i)'; paths(:,step,j)';paths(:,step+1,j)'];
+%             labels = [1;1;-1;-1];
+            
             %train svm to get hyperplane
-            SVM = svmtrain(labels,pairCloud,'-q -t 0');
+            SVM = svmtrain(labels,pairCloud,'-c 10000 -q -t 0');
             %extract params
             suppVecs = pairCloud(SVM.sv_indices,:);
             w = SVM.sv_coef' * suppVecs;
@@ -56,16 +60,31 @@ for step = 1:Nsteps
             currA = w/normw;
             currb = (SVM.rho)/normw;
             
-            
             stepA(:,j,i) = currA;
             stepb(j,i) = currb;
+            
+            %DEEEEEEEEEEEEEBBBBBBBBBBBBUUUUUUUUUUUGGGGGGGGGGGGG
+%             close all
+%             scatter3(hull(:,1),hull(:,2),hull(:,3),'go')
+%             hold on;
+%             plot3([paths(1,step,i);paths(1,step+1,i)],[paths(2,step,i)';paths(2,step+1,i)],[paths(3,step,i)';paths(3,step+1,i)],'-go')
+%             plot3([paths(1,step,j);paths(1,step+1,j)],[paths(2,step,j)';paths(2,step+1,j)],[paths(3,step,j)';paths(3,step+1,j)],'-ro')
+%             plotA = -currA;
+%             plotb = currb;
+%             [debx,deby,debz] = hyperplane_surf(plotA,plotb,[-5,5],[-5,5],[-1,3],2);
+%             u = plotA(1)*ones(size(debx,1),size(debx,2));
+%             v = plotA(2)*ones(size(deby,1),size(deby,2));
+%             ww = plotA(3)*ones(size(debz,1),size(debz,2));
+%             quiver3(debx,deby,debz,u,v,ww,0.1);
+%             surf(debx,deby,debz,'FaceAlpha',0.5,'FaceColor',[0.5,0.1,0.4],'edgecolor','none');
+%             debug = 0;
             
             %SHP constraint for i
             %compute conflict hull from j's perspective
             %   i's path must stay out of this hull
             [hull] = swept_cyl_verts(cylinders(types(j),types(i),:),...
                                      [paths(:,step,j)';paths(:,step+1,j)']);
-                                 
+
             %vertex cloud for hull + waypoints for agent i
             pairCloud = [hull; paths(:,step,i)';paths(:,step+1,i)'];
             
@@ -73,7 +92,7 @@ for step = 1:Nsteps
             labels = [ones(size(hull,1),1);-1;-1];
 
             %train svm to get hyperplane
-            SVM = svmtrain(labels,pairCloud,'-q -t 0');
+            SVM = svmtrain(labels,pairCloud,'-c 10000 -q -t 0');
 
             %hyperplane params
             suppVecs = pairCloud(SVM.sv_indices,:);
@@ -83,6 +102,27 @@ for step = 1:Nsteps
             currb = (SVM.rho)/normw;
             stepA(:,i,j) = currA;
             stepb(i,j) = currb;
+            
+            %DEEEEEEEEEEEEEBBBBBBBBBBBBUUUUUUUUUUUGGGGGGGGGGGGG
+%             scatter3(hull(:,1),hull(:,2),hull(:,3),'ro')
+%             plotA = -currA;
+%             plotb = currb;
+%             [debx,deby,debz] = hyperplane_surf(plotA,plotb,[-5,5],[-5,5],[-1,3],2);
+%             u = plotA(1)*ones(size(debx,1),size(debx,2));
+%             v = plotA(2)*ones(size(deby,1),size(deby,2));
+%             ww = plotA(3)*ones(size(debz,1),size(debz,2));
+%             quiver3(debx,deby,debz,u,v,ww,0.1);
+%             surf(debx,deby,debz,'FaceAlpha',0.5,'FaceColor',[0.1,0.5,0.4],'edgecolor','none');
+%             ax = gca;
+%             xlabel('x')
+%             ylabel('y')
+%             zlabel('z')
+%             ax.Projection = 'perspective';
+%             ax.DataAspectRatioMode = 'manual';
+%             ax.DataAspectRatio = [1 1 1];
+%             axis vis3d;
+%             debug = 0;
+            
         end
     end
     
@@ -91,4 +131,3 @@ for step = 1:Nsteps
 end
 
 end
-
