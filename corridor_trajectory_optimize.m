@@ -19,7 +19,7 @@
 %   pp:   a matlab ppform struct containing the trajectory
 %   cost: the cost value of the quadratic program
 %
-function [pp, cost] = corridor_trajectory_optimize_devel(...
+function [pp, cost] = corridor_trajectory_optimize(...
 	Arobots, brobots, Aobs, bobs, lb, ub, ...
 	path, deg, cont, timescale, obs_cylinder)
 
@@ -31,7 +31,7 @@ function [pp, cost] = corridor_trajectory_optimize_devel(...
 
 	%ellipsoid = diag(ellipsoid);
     %for now just use ellipsoid for robot/env specification
-	obs_ellipsoid = diag(obs_cylinder(1)*ones(3,1));
+	obs_ellipsoid = diag(obs_cylinder);
     
 	% hack - so we can use 7th degree
 	ends_zeroderivs = min(3,cont);
@@ -95,11 +95,7 @@ function [pp, cost] = corridor_trajectory_optimize_devel(...
 		Astep(nan_rows,:) = [];
 		bstep(nan_rows) = [];
         
-		% try to eliminate redundant half-space constraints
-		interior_pt = (path(:,step) + path(:,step+1)) ./ 2;
-		[Astep,bstep] = noredund(Astep,bstep,interior_pt);
-        
-        %DEBUG. Try to visualize constraints
+                %DEBUG. Try to visualize constraints
 %         for d = 1:size(bstep)
 %             [debx,deby,debz] = hyperplane_surf(-Astep(d,:),bstep(d),[-5,5],[-1,7],[-1,7],2);
 %             u = -Astep(d,1)*ones(size(debx,1),size(debx,2));
@@ -111,6 +107,10 @@ function [pp, cost] = corridor_trajectory_optimize_devel(...
 %             surf(debx,deby,debz,'FaceAlpha',0.5,'FaceColor',[0.4,0.1,0.4],'edgecolor','none');
 %         end
 %         hold off;
+        
+		% try to eliminate redundant half-space constraints
+% 		interior_pt = (path(:,step) + path(:,step+1)) ./ 2;
+% 		[Astep,bstep] = noredund(Astep,bstep,interior_pt);
         
 		% add bounding polyhedron constraints on control points
 		Aineq = [Aineq; kron(dim_select, kron(eye(order), Astep))];

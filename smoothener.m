@@ -40,84 +40,74 @@
 %   obstacle separating function
 
 %% Input Specification
-
-%Path defs for 2 robots
-% r1_path = [4, 1,  0;...
-%            3, 2,  1; ...
-%            2, 3,  2; ...
-%            1, 4,  3; ...
-%            0, 5,  4; ...
-%            -1, 6,  5];
-% 
-% r2_path = [-4, 1,  0;...
-%            -3, 2,  -1;...
-%            -2, 3,  -2;...
-%            -1, 4,  -3;...
-%            -0, 5,  -4;...
-%            1, 6,  -5];
-
-
-r1_path = [0, 0,  3;...
-           0, 2,  3; ...
-           0, 4,  3];
-
-r2_path = [4, 0,  3;...
-           4, 2,  3;...
-           4, 4,  3];
+clear; close all;
 % r1_path = [0, 0,  3;...
-%            0, 2,  3]
+%            0, 2,  3; ...
+%            0, 4,  3];
 % 
 % r2_path = [4, 0,  3;...
-%            4, 2,  3]
-r3_path = [-4, 0,  3;...
-           -4, 2,  3; ...
-           -4, 4,  3];
+%            4, 2,  3;...
+%            4, 4,  3];
+% 
+% r3_path = [-4, 0,  3;...
+%            -4, 2,  3; ...
+%            -4, 4,  3];
+% 
+% r4_path = [0, 0,  7;...
+%            0, 2,  7;...
+%            0, 4,  7];
+%        
+% r5_path = [0, 0,  0;...
+%            0, 2,  0; ...
+%            0, 4,  0];
 
-r4_path = [0, 0,  7;...
-           0, 2,  7;...
-           0, 4,  7];
-       
-r5_path = [0, 0,  0;...
-           0, 2,  0; ...
-           0, 4,  0];
-
-       
-%pad
-% r1_path = [r1_path(1,:);r1_path;r1_path(3,:)]
-% r2_path = [r2_path(1,:);r2_path;r2_path(3,:)]
-       
-assert(size(r1_path,1) == size(r2_path,1))
-
-nsteps = size(r1_path,1) - 1;
+% ~~~~~~ Env file for octomap ~~~~~~
+map = '/home/mark/act/smoothener/examples/swap4/map.bt';
 
 % ~~~~~~ paths Input ~~~~~~
-paths = zeros(3,size(r1_path,1),5);
-paths(:,:,1) = r1_path';
-paths(:,:,2) = r2_path';
-paths(:,:,3) = r3_path';
-paths(:,:,4) = r4_path';
-paths(:,:,5) = r5_path';
+paths = read_schedule('./examples/swap4/discreteSchedule.json');
+[dim, k, N] = size(paths);
+nsteps = size(paths,2)-1;
 
 % ~~~~~~ types Input ~~~~~~
-types = [1;2;2;2;2];
+%1 = small, 2 = large for swap4
+ntypes = 2;
+types = [1;1;2;2];
+
 % types = [1;2];
 % ~~~~~~ conf_cylinders Input ~~~~~~
-conf_cylinders = zeros(2,2,3);
-% currently only separating type 1 from 2
-conf_cylinders(1,2,:) = [1,1,1];
-conf_cylinders(2,1,:) = [1,1,1];
-conf_cylinders(1,1,:) = [1,1,1];
-conf_cylinders(2,2,:) = [1,1,1];
+conf_cylinders = zeros(ntypes,ntypes,3);
+%cylinders(i,j,1) = radius type i must stay away from type j
+%cylinders(i,j,2) = radius type i must stay above type j
+%cylinders(i,j,3) = radius type i must stay below type j
+
+conf_cylinders(1,2,:) = [0.20,0.30,0.60];
+conf_cylinders(2,1,:) = [0.20,0.60,0.30];
+
+conf_cylinders(1,1,:) = [0.15,0.30,0.30];
+conf_cylinders(2,2,:) = [0.25,0.50,0.50];
 
 % ~~~~~~ obs_cylinders Input NOTE: CURRENTLY USING ELLIPSOIDS ~~~~~~
-obs_cylinders = ones(5,3);
-obs_ellipsoids = obs_cylinders;
+obs_cylinders = ones(ntypes,3);
+%obs_cylinders(i,:) = [radius,above,below] for environment
+%Right now it is [rx,ry,rz] for ellipsoids
+obs_cylinders(1,:) = [0.15,0.15,0.15]*.1;
+obs_cylinders(2,:) = [0.25,0.25,0.25]*.1;
+%hack for ellipsoid input to octomap separation function
+obs_ellipsoids = zeros(N,3);
+for n = 1:N
+    obs_ellipsoids(n,:) = obs_cylinders(types(n),:);
+end
 
 % ~~~~~~ bbox Input ~~~~~~
-bbbuffer = 10;
-bbox = [min(min(paths(1,:,:))) - bbbuffer,max(max(paths(1,:,:)) + bbbuffer);...
-        min(min(paths(2,:,:))) - bbbuffer,max(max(paths(2,:,:)) + bbbuffer);...
-        min(min(paths(3,:,:))) - bbbuffer,max(max(paths(3,:,:)) + bbbuffer)];
+bbox = [-5.5, 2.0;...
+        -3.0, 3.5;...
+         0.0, 2.5];
+     
+% bbbuffer = 10;
+% bbox = [min(min(paths(1,:,:))) - bbbuffer,max(max(paths(1,:,:)) + bbbuffer);...
+%         min(min(paths(2,:,:))) - bbbuffer,max(max(paths(2,:,:)) + bbbuffer);...
+%         min(min(paths(3,:,:))) - bbbuffer,max(max(paths(3,:,:)) + bbbuffer)];
     
 % ~~~~~~ deg,cont,timescale,iters input ~~~~~~
 deg = 7;
@@ -127,7 +117,7 @@ iters = 2;
 Neval = 32; %number of samples on pps separation
 
 % ~~~~~~ pp obstacle separation function ~~~~~~
-pp_obs_sep_fun = @pp_obs_sep_none;
+pp_obs_sep_fun = @(poly,elip) pp_obs_sep_octomap(poly,elip,map);
 
 %% Smoothener
 [dim, k, N] = size(paths);
@@ -173,8 +163,9 @@ for iter=1:iters
     iter_costs = zeros(1,N);
     % parfor
     for j=1:N
-        lb = bbox(:,1) + [obs_cylinders(j,1);obs_cylinders(j,1);obs_cylinders(j,3)];
-        ub = bbox(:,2) - [obs_cylinders(j,1);obs_cylinders(j,1);obs_cylinders(j,2)];
+        fprintf(' agent %d of %d...\n', j, N);
+        lb = bbox(:,1) + [obs_cylinders(types(j),1);obs_cylinders(types(j),1);obs_cylinders(types(j),3)];
+        ub = bbox(:,2) - [obs_cylinders(types(j),1);obs_cylinders(types(j),1);obs_cylinders(types(j),2)];
 
         hs_slice = squeeze(hs(j,:));
         step_n_faces = cellfun(@(a) size(a, 1), hs_slice);
@@ -192,11 +183,11 @@ for iter=1:iters
             Aobs(:,1:n_faces,i) = hs_slice_step(:,1:3)';
             bobs(1:n_faces,i) = hs_slice_step(:,4);
         end
-        [pps{j}, iter_costs(j)] = corridor_trajectory_optimize_devel(...
+        [pps{j}, iter_costs(j)] = corridor_trajectory_optimize(...
             Arobots, brobots, ...
             Aobs, bobs, ...
             lb, ub,...
-            paths(:,:,j), deg, cont, timescale, obs_cylinders(j,:));%[0.2 0.2 0.4], [0.2 0.2 0.2]);%
+            paths(:,:,j), deg, cont, timescale, obs_cylinders(types(j),:));%[0.2 0.2 0.4], [0.2 0.2 0.2]);%
 
         s = [];
         s.Arobots = Arobots;
