@@ -21,7 +21,7 @@
 %
 function [pp, cost] = corridor_trajectory_optimize(...
 	Arobots, brobots, Aobs, bobs, lb, ub, ...
-	path, deg, cont, timescale, obs_cylinder,id,iter)
+	path, deg, cont, timescale, obs_cylinder,id,iter,loco)
 
 	[dim, ~, steps] = size(Arobots);
 	assert(size(path, 2) == steps + 1);
@@ -95,7 +95,11 @@ function [pp, cost] = corridor_trajectory_optimize(...
 		Astep(nan_rows,:) = [];
 		bstep(nan_rows) = [];
         
-        %DEBUG. Try to visualize constraints
+        %Add fixed z constraint (for planar robots)
+        if (loco < 3)
+            Astep = [Astep;0,0,1;0,0,-1];
+            bstep = [bstep;init(3)+0.005;-1*(init(3)-0.005)];
+        end
         
 		% try to eliminate redundant half-space constraints
 		interior_pt = (path(:,step) + path(:,step+1)) ./ 2;

@@ -61,24 +61,29 @@ clear; close all;
 %            0, 2,  0; ...
 %            0, 4,  0];
 
+% ~~~~~~ Plot / Animate? ~~~~~~
+PLOT = true;
+ANIMATE = true;
+
 % ~~~~~~ Env file for octomap ~~~~~~
-map = './examples/swap4/map.bt';
+map = './examples/ground1/map.bt';
 
 % ~~~~~~ STL file for plotting ~~~~~~
-stl_file = './examples/swap4/map.stl';
+stl_file = './examples/ground1/map.stl';
 
 % ~~~~~~ paths Input ~~~~~~
-[paths,names] = read_schedule('./examples/swap4/discreteSchedule.json');
+[paths,names] = read_schedule('./examples/ground1/discreteSchedule.json');
 [dim, k, N] = size(paths);
 nsteps = size(paths,2)-1;
 
 % ~~~~~~ pps Output ~~~~~~
-outcsv = './examples/swap4/solution';
+outcsv = './examples/ground1/';
 
 % ~~~~~~ types Input ~~~~~~
-%1 = small, 2 = large for swap4
+%1 = ground, 2 = small for ground1
 ntypes = 2;
 types = [1;1;2;2];
+locomotion = [2,3];
 
 % types = [1;2];
 % ~~~~~~ conf_cylinders Input ~~~~~~
@@ -87,20 +92,20 @@ conf_cylinders = zeros(ntypes,ntypes,3);
 %cylinders(i,j,2) = radius type i must stay above type j
 %cylinders(i,j,3) = radius type i must stay below type j
 
-conf_cylinders(1,2,:) = [0.20,0.30,0.60];
-conf_cylinders(2,1,:) = [0.20,0.60,0.30];
+conf_cylinders(1,2,:) = [0.13,0.24,0.24];
+conf_cylinders(2,1,:) = [0.13,0.24,0.24];
 
-conf_cylinders(1,1,:) = [0.15,0.30,0.30];
-conf_cylinders(2,2,:) = [0.25,0.50,0.50];
+conf_cylinders(1,1,:) = [0.33,0.24,0.24];
+conf_cylinders(2,2,:) = [0.36,0.42,0.42];
 
-conf_cylinders = conf_cylinders;
+conf_cylinders = conf_cylinders*0.75;
 
 % ~~~~~~ obs_cylinders Input NOTE: CURRENTLY USING ELLIPSOIDS ~~~~~~
 obs_cylinders = ones(ntypes,3);
 %obs_cylinders(i,:) = [radius,above,below] for environment
 %Right now it is [rx,ry,rz] for ellipsoids
 obs_cylinders(1,:) = [0.15,0.15,0.15];
-obs_cylinders(2,:) = [0.20,0.20,0.20];
+obs_cylinders(2,:) = [0.18,0.18,0.18];
 %hack for ellipsoid input to octomap separation function
 obs_ellipsoids = zeros(N,3);
 for n = 1:N
@@ -172,7 +177,7 @@ for iter=1:iters
     pps = cell(1,N);
     iter_costs = zeros(1,N);
     % parfor
-    parfor j=1:N
+    for j=1:N
         fprintf(' agent %d of %d...\n', j, N);
         lb = bbox(:,1) + [obs_cylinders(types(j),1);obs_cylinders(types(j),1);obs_cylinders(types(j),3)];
         ub = bbox(:,2) - [obs_cylinders(types(j),1);obs_cylinders(types(j),1);obs_cylinders(types(j),2)];
@@ -197,7 +202,7 @@ for iter=1:iters
             Arobots, brobots, ...
             Aobs, bobs, ...
             lb, ub,...
-            paths(:,:,j), deg, cont, timescale, obs_cylinders(types(j),:),j,iter);%[0.2 0.2 0.4], [0.2 0.2 0.2]);%
+            paths(:,:,j), deg, cont, timescale, obs_cylinders(types(j),:),j,iter,locomotion(types(j)));%[0.2 0.2 0.4], [0.2 0.2 0.2]);%
 
         s = [];
         s.Arobots = Arobots;
@@ -214,75 +219,78 @@ for iter=1:iters
     all_pps(iter,:) = pps;
 end
 
-%% Plot?
-close all;
-%sample trajectories
-duration = pps{1}.breaks(end);
-sr = 0.05;
-t = 0:sr:duration;
-trajplots = cell(N,1);
-robcolors = cell(N,1);
-for i=1:size(paths,3)
-    trajplots{i} = ppval(pps{i}, t)';
-end
-
-%plot path + trajectory
-for i=1:size(paths,3)	% [14,16,17,31]		
-    h = plot3n(paths(:,:,i));
-    hold on;
-    robcolor{i} = get(h, 'color');
-    h = plot3n(trajplots{i}', 'color', robcolor{i}, 'LineWidth', 3);
-end
-
-%plot map
-fv = stlread(stl_file);
-	patch(fv, ...
-			'FaceColor', [0.4 0.4 0.4], 'EdgeColor', 'none', ...
-			'SpecularStrength', 0.1, 'AmbientStrength', 0.5, 'facealpha',0.6);
-
-%set axis props
-ax = gca;
-xlabel('x')
-ylabel('y')
-zlabel('z')
-ax.Projection = 'perspective';
-ax.DataAspectRatioMode = 'manual';
-ax.DataAspectRatio = [1 1 1];
-axis vis3d;
-
-% Animate? Using ellipsoid atm
-
-%in = input('Animate: ')
-
-%robot hull
-robots = cell(N,1); %{xyz,handle}
-for n=1:N
-    [sx,sy,sz] = ellipsoid(paths(1,1,n),paths(2,1,n),paths(3,1,n),obs_cylinders(types(n),1),obs_cylinders(types(n),2),obs_cylinders(types(n),3));
-    r_color = zeros(size(sz,1),size(sz,2),3);
-    r_color(:,:,1) = repmat(linspace((robcolor{n}(1)/5),robcolor{n}(1),size(sx,1))',1,size(sx,2)); % red
-    r_color(:,:,2) = repmat(linspace((robcolor{n}(2)/5),robcolor{n}(2),size(sy,1))',1,size(sy,2)); % green
-    r_color(:,:,3) = repmat(linspace((robcolor{n}(3)/5),robcolor{n}(3),size(sz,1))',1,size(sz,2));
-    robots{n} = surf(ax,sx,sy,sz,r_color,'EdgeColor', 'none');
-end
-
-for time = 2:numel(t)
-    for n = 1:N
-        dx = trajplots{n}(time,1) - trajplots{n}(time-1,1);
-        dy = trajplots{n}(time,2) - trajplots{n}(time-1,2);
-        dz = trajplots{n}(time,3) - trajplots{n}(time-1,3);
-        robots{n}.XData = robots{n}.XData + dx;
-        robots{n}.YData = robots{n}.YData + dy;
-        robots{n}.ZData = robots{n}.ZData + dz;
-    end
-    pause(0.033);
-end
-
 %% Save
 
 % ~~~~~~ pps Output ~~~~~~
-outcsv = './examples/swap4/';
 for n = 1:N
     pp2csv(pps{n}, [outcsv,names{n},'.csv'])
 end
+
+%% Plot?
+if (PLOT)
+    close all;
+    %sample trajectories
+    duration = pps{1}.breaks(end);
+    sr = 0.05;
+    t = 0:sr:duration;
+    trajplots = cell(N,1);
+    robcolors = cell(N,1);
+    for i=1:size(paths,3)
+        trajplots{i} = ppval(pps{i}, t)';
+    end
+
+    %plot path + trajectory
+    for i=1:size(paths,3)	% [14,16,17,31]		
+        h = plot3n(paths(:,:,i));
+        hold on;
+        robcolor{i} = get(h, 'color');
+        h = plot3n(trajplots{i}', 'color', robcolor{i}, 'LineWidth', 3);
+    end
+
+    %plot map
+    fv = stlread(stl_file);
+        patch(fv, ...
+                'FaceColor', [0.4 0.4 0.4], 'EdgeColor', 'none', ...
+                'SpecularStrength', 0.1, 'AmbientStrength', 0.5, 'facealpha',0.6);
+
+    %set axis props
+    ax = gca;
+    xlabel('x')
+    ylabel('y')
+    zlabel('z')
+    ax.Projection = 'perspective';
+    ax.DataAspectRatioMode = 'manual';
+    ax.DataAspectRatio = [1 1 1];
+    axis vis3d;
+end
+% Animate? Using ellipsoid atm
+
+if (ANIMATE)
+    %in = input('Animate: ')
+
+    %robot hull
+    robots = cell(N,1); %{xyz,handle}
+    for n=1:N
+        [sx,sy,sz] = ellipsoid(paths(1,1,n),paths(2,1,n),paths(3,1,n),obs_cylinders(types(n),1),obs_cylinders(types(n),2),obs_cylinders(types(n),3));
+        r_color = zeros(size(sz,1),size(sz,2),3);
+        r_color(:,:,1) = repmat(linspace((robcolor{n}(1)/5),robcolor{n}(1),size(sx,1))',1,size(sx,2)); % red
+        r_color(:,:,2) = repmat(linspace((robcolor{n}(2)/5),robcolor{n}(2),size(sy,1))',1,size(sy,2)); % green
+        r_color(:,:,3) = repmat(linspace((robcolor{n}(3)/5),robcolor{n}(3),size(sz,1))',1,size(sz,2));
+        robots{n} = surf(ax,sx,sy,sz,r_color,'EdgeColor', 'none');
+    end
+
+    for time = 2:numel(t)
+        for n = 1:N
+            dx = trajplots{n}(time,1) - trajplots{n}(time-1,1);
+            dy = trajplots{n}(time,2) - trajplots{n}(time-1,2);
+            dz = trajplots{n}(time,3) - trajplots{n}(time-1,3);
+            robots{n}.XData = robots{n}.XData + dx;
+            robots{n}.YData = robots{n}.YData + dy;
+            robots{n}.ZData = robots{n}.ZData + dz;
+        end
+        pause(0.033);
+    end
+end
+hold off;
 
 
