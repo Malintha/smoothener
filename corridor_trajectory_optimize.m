@@ -21,7 +21,7 @@
 %
 function [pp, cost] = corridor_trajectory_optimize(...
 	Arobots, brobots, Aobs, bobs, lb, ub, ...
-	path, deg, cont, timescale, obs_cylinder,id)
+	path, deg, cont, timescale, obs_cylinder,id,iter)
 
 	[dim, ~, steps] = size(Arobots);
 	assert(size(path, 2) == steps + 1);
@@ -96,7 +96,12 @@ function [pp, cost] = corridor_trajectory_optimize(...
 		bstep(nan_rows) = [];
         
         %DEBUG. Try to visualize constraints
-%         if (id == 4)
+        
+		% try to eliminate redundant half-space constraints
+		interior_pt = (path(:,step) + path(:,step+1)) ./ 2;
+		[Astep,bstep] = noredund(Astep,bstep,interior_pt);
+        
+%         if (id == 3 && iter == 2)
 %             for d = 1:size(bstep)
 %                 [debx,deby,debz] = hyperplane_surf(-Astep(d,:),bstep(d),[-5,5],[-1,7],[-1,7],2);
 %                 u = -Astep(d,1)*ones(size(debx,1),size(debx,2));
@@ -109,10 +114,6 @@ function [pp, cost] = corridor_trajectory_optimize(...
 %             end
 %             hold off;
 %         end
-        
-		% try to eliminate redundant half-space constraints
-		interior_pt = (path(:,step) + path(:,step+1)) ./ 2;
-		[Astep,bstep] = noredund(Astep,bstep,interior_pt);
         
 		% add bounding polyhedron constraints on control points
 		Aineq = [Aineq; kron(dim_select, kron(eye(order), Astep))];

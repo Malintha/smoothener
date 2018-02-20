@@ -62,15 +62,18 @@ clear; close all;
 %            0, 4,  0];
 
 % ~~~~~~ Env file for octomap ~~~~~~
-map = '/home/mark/act/smoothener/examples/swap4/map.bt';
+map = './examples/swap4/map.bt';
 
 % ~~~~~~ STL file for plotting ~~~~~~
-stl_file = '/home/mark/act/smoothener/examples/swap4/map.stl';
+stl_file = './examples/swap4/map.stl';
 
 % ~~~~~~ paths Input ~~~~~~
-paths = read_schedule('./examples/swap4/discreteSchedule.json');
+[paths,names] = read_schedule('./examples/swap4/discreteSchedule.json');
 [dim, k, N] = size(paths);
 nsteps = size(paths,2)-1;
+
+% ~~~~~~ pps Output ~~~~~~
+outcsv = './examples/swap4/solution';
 
 % ~~~~~~ types Input ~~~~~~
 %1 = small, 2 = large for swap4
@@ -88,7 +91,7 @@ conf_cylinders(1,2,:) = [0.20,0.30,0.60];
 conf_cylinders(2,1,:) = [0.20,0.60,0.30];
 
 conf_cylinders(1,1,:) = [0.15,0.30,0.30];
-conf_cylinders(2,2,:) = [0.25,0.50,0.50]*.75;
+conf_cylinders(2,2,:) = [0.25,0.50,0.50];
 
 conf_cylinders = conf_cylinders;
 
@@ -97,7 +100,7 @@ obs_cylinders = ones(ntypes,3);
 %obs_cylinders(i,:) = [radius,above,below] for environment
 %Right now it is [rx,ry,rz] for ellipsoids
 obs_cylinders(1,:) = [0.15,0.15,0.15];
-obs_cylinders(2,:) = [0.25,0.25,0.25]*0.5;
+obs_cylinders(2,:) = [0.20,0.20,0.20];
 %hack for ellipsoid input to octomap separation function
 obs_ellipsoids = zeros(N,3);
 for n = 1:N
@@ -120,7 +123,7 @@ deg = 7;
 cont = 4;
 timescale = 1;
 iters = 2;
-Neval = 32; %number of samples on pps separation
+Neval = 64; %number of samples on pps separation
 
 % ~~~~~~ pp obstacle separation function ~~~~~~
 pp_obs_sep_fun = @(poly,elip) pp_obs_sep_octomap(poly,elip,map);
@@ -169,7 +172,7 @@ for iter=1:iters
     pps = cell(1,N);
     iter_costs = zeros(1,N);
     % parfor
-    for j=1:N
+    parfor j=1:N
         fprintf(' agent %d of %d...\n', j, N);
         lb = bbox(:,1) + [obs_cylinders(types(j),1);obs_cylinders(types(j),1);obs_cylinders(types(j),3)];
         ub = bbox(:,2) - [obs_cylinders(types(j),1);obs_cylinders(types(j),1);obs_cylinders(types(j),2)];
@@ -194,7 +197,7 @@ for iter=1:iters
             Arobots, brobots, ...
             Aobs, bobs, ...
             lb, ub,...
-            paths(:,:,j), deg, cont, timescale, obs_cylinders(types(j),:),j);%[0.2 0.2 0.4], [0.2 0.2 0.2]);%
+            paths(:,:,j), deg, cont, timescale, obs_cylinders(types(j),:),j,iter);%[0.2 0.2 0.4], [0.2 0.2 0.2]);%
 
         s = [];
         s.Arobots = Arobots;
@@ -273,4 +276,13 @@ for time = 2:numel(t)
     end
     pause(0.033);
 end
+
+%% Save
+
+% ~~~~~~ pps Output ~~~~~~
+outcsv = './examples/swap4/';
+for n = 1:N
+    pp2csv(pps{n}, [outcsv,names{n},'.csv'])
+end
+
 

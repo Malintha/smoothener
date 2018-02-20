@@ -1,10 +1,10 @@
-CXXFLAGS = -std=c++11 -Ioctomap/octomap/include -O3
+CXXFLAGS = -std=c++11 -I/opt/ros/kinetic/include -L/opt/ros/kinetic/lib -O3
 CFLAGS = -O3 -x c
 
 CC = $(CXX)
 
 octomap_corridor : octomap_corridor.o \
-octomap/lib/liboctomap.a octomap/lib/liboctomath.a \
+/opt/ros/kinetic/lib/liboctomap.a /opt/ros/kinetic/lib/liboctomath.a \
 cvxgen/ldl.o cvxgen/matrix_support.o cvxgen/solver.o cvxgen/util.o
 
 clean:

@@ -1,7 +1,7 @@
 % writes a matlab ppform struct to a CSV file.
 % TODO: document CSV format used.
 %
-function poly2csv(pp, filename)
+function pp2csv(pp, filename)
 	[breaks, coefs, npieces, order, dim] = unmkpp(pp);
 	assert(dim == 3 || dim == 4);
 	coefs = reshape(coefs, [], npieces, order);
