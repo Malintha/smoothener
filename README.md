@@ -35,8 +35,11 @@ Output is given as Matlab's [ppform](https://www.mathworks.com/help/curvefit/the
 ## setup instructions
 1. Make sure your Matlab MEX compiler is set up correctly, and uses at least -O2 optimization.
 2. Run `make`.
-3. From the `smoothener` root directory , open a Matlab session and run `main_grid`.
+3. From the `smoothener` root directory , open a Matlab session and run `smoothener.m`.
    Computation should take several seconds, and you should see a 3D plot when it is done.
+4. Make sure matlab is launched to use system libstdc++.so.6 rather than the Matlab distributed version.
+   This can be done by using LD_PRELOAD
+* alias matlab="LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6 /usr/local/MATLAB/R2017b/bin/matlab -desktop"
 
 ### extra setup to use Octomap:
 4. run `git submodule init && git submodule update`.
