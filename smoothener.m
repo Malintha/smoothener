@@ -64,6 +64,7 @@ clear; close all;
 % ~~~~~~ USER INPUT ~~~~~~
 PLOT = true;
 ANIMATE = true;
+OBSTACLES = true;
 
 example = 'crossing2';
 %example = 'multitype';
@@ -145,14 +146,14 @@ for n = 1:N
    end
 end
 
-% ~~~~~~ pps Output ~~~~~~
-outcsv = strcat(folder, '/examples/', example, '/output/pps/');
-
 %hack for ellipsoid input to octomap separation function
 obs_ellipsoids = zeros(N,3);
 for n = 1:N
     obs_ellipsoids(n,:) = obs_cylinders(types(n),:);
 end
+
+% ~~~~~~ pps Output ~~~~~~
+outcsv = strcat(folder, '/examples/', example, '/output/pps/');
 
 % ~~~~~~ bbox Input ~~~~~~
 bbox = read_octomap_bbox_mex(map);
@@ -166,8 +167,12 @@ bbox = read_octomap_bbox_mex(map);
 %         min(min(paths(3,:,:))) - bbbuffer,max(max(paths(3,:,:)) + bbbuffer)];
     
 % ~~~~~~ pp obstacle separation function ~~~~~~
-% pp_obs_sep_fun = @(poly,elip) pp_obs_sep_octomap(poly,elip,map);
-pp_obs_sep_fun = @pp_obs_sep_none;
+if (OBSTACLES)
+    pp_obs_sep_fun = @(poly,elip) pp_obs_sep_octomap(poly,elip,map);
+else
+    pp_obs_sep_fun = @pp_obs_sep_none;
+end
+
 
 %% Smoothener
 [dim, k, N] = size(paths);

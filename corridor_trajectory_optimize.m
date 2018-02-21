@@ -96,29 +96,29 @@ function [pp, cost] = corridor_trajectory_optimize(...
 		bstep(nan_rows) = [];
         
         %Add fixed z constraint (for planar robots)
-%         if (loco < 3)
-%             Astep = [Astep;0,0,1;0,0,-1];
-%             bstep = [bstep;init(3)+0.05;-1*(init(3)-0.05)];
-%         end
+        if (loco < 3)
+            Astep = [Astep;0,0,1;0,0,-1];
+            bstep = [bstep;init(3)+0.005;-1*(init(3)-0.005)];
+        end
         
 		% try to eliminate redundant half-space constraints
 		interior_pt = (path(:,step) + path(:,step+1)) ./ 2;
 		[Astep,bstep] = noredund(Astep,bstep,interior_pt);
         
-        if (id == 4 && iter == 1 && step == 14)
-            for d = 1:size(bstep)
-                [debx,deby,debz] = hyperplane_surf(-Astep(d,:),bstep(d),[-5,5],[-1,7],[-1,7],2);
-                u = -Astep(d,1)*ones(size(debx,1),size(debx,2));
-                v = -Astep(d,2)*ones(size(debx,1),size(debx,2));
-                w = -Astep(d,3)*ones(size(debx,1),size(debx,2));
-                quiver3(debx,deby,debz,u,v,w,0.1);
-                hold on;
-                plot3([path(1,step);path(1,step+1)],[path(2,step);path(2,step+1)],[path(3,step);path(3,step+1)],'-go','LineWidth',7);
-                surf(debx,deby,debz,'FaceAlpha',0.5,'FaceColor',[0.4,0.1,0.4],'edgecolor','none');
-                debug = 4;
-            end
-            hold off;
-        end
+%         if (id == 4 && iter == 1 && step == 14)
+%             for d = 1:size(bstep)
+%                 [debx,deby,debz] = hyperplane_surf(-Astep(d,:),bstep(d),[-5,5],[-1,7],[-1,7],2);
+%                 u = -Astep(d,1)*ones(size(debx,1),size(debx,2));
+%                 v = -Astep(d,2)*ones(size(debx,1),size(debx,2));
+%                 w = -Astep(d,3)*ones(size(debx,1),size(debx,2));
+%                 quiver3(debx,deby,debz,u,v,w,0.1);
+%                 hold on;
+%                 plot3([path(1,step);path(1,step+1)],[path(2,step);path(2,step+1)],[path(3,step);path(3,step+1)],'-go','LineWidth',7);
+%                 surf(debx,deby,debz,'FaceAlpha',0.5,'FaceColor',[0.4,0.1,0.4],'edgecolor','none');
+%                 debug = 4;
+%             end
+%             hold off;
+%         end
         
 		% add bounding polyhedron constraints on control points
 		Aineq = [Aineq; kron(dim_select, kron(eye(order), Astep))];

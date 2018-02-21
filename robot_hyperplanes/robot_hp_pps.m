@@ -24,6 +24,8 @@ Nsteps = pps{1}.pieces; % #time steps
 dim = pps{1}.dim;
 Nbreaks = pps{1}.breaks;
 
+hullRes = 16; %nsides per polytope approx.
+
 for i=2:Nrob
     assert(pps{i}.dim == dim);
     assert(pps{i}.pieces == Nsteps);
@@ -52,10 +54,8 @@ for step = 1:Nsteps
             %SHP constraint for j
             %compute conflict hull from i's perspective
             %   j's path must stay out of this hull
-            if (step == 4)
-                debug = 0;
-            end
-            [hull] = swept_cyl_verts(cylinders(types(j),types(i),:), traj_i');
+
+            [hull] = swept_cyl_verts_2(cylinders(types(j),types(i),:), traj_i',hullRes);
                                  
             %vertex cloud for hull + waypoints for agent j
             pairCloud = [hull; traj_j'];
@@ -79,74 +79,20 @@ for step = 1:Nsteps
             %sanity check for inseperable case
             suppDists = suppVecs * currA' - currb;
             suppLab = labels(SVM.sv_indices,:);
-%             if (step ==4)
-%                 close all;
-%                 scatter3(hull(:,1),hull(:,2),hull(:,3),'bo')
-%                 hold on;
-%                 plot3(traj_i(1,:),traj_i(2,:),traj_i(3,:),'-go','LineWidth',7)
-%                 plot3(traj_j(1,:),traj_j(2,:),traj_j(3,:),'-ro','LineWidth',7)
-%                 plotA = -currA;
-%                 plotb = currb;
-%                 buf = 2;
-%                 bbx = [min([traj_i(1,:),traj_j(1,:)])-buf,max([traj_i(1,:),traj_j(1,:)])+buf];
-%                 bby = [min([traj_i(2,:),traj_j(2,:)])-buf,max([traj_i(2,:),traj_j(2,:)])+buf];
-%                 bbz = [min([traj_i(3,:),traj_j(3,:)])-buf,max([traj_i(3,:),traj_j(3,:)])+buf];
-%                 [debx,deby,debz] = hyperplane_surf(plotA,plotb,bbx,bby,bbz,2);
-%                 u = plotA(1)*ones(size(debx,1),size(debx,2));
-%                 v = plotA(2)*ones(size(deby,1),size(deby,2));
-%                 ww = plotA(3)*ones(size(debz,1),size(debz,2));
-%                 quiver3(debx,deby,debz,u,v,ww,0.1);
-%                 surf(debx,deby,debz,'FaceAlpha',0.5,'FaceColor',[0.4,0.1,0.4],'edgecolor','none');
-%                 ax = gca;
-%                 xlabel('x')
-%                 ylabel('y')
-%                 zlabel('z')
-%                 ax.Projection = 'perspective';
-%                 ax.DataAspectRatioMode = 'manual';
-%                 ax.DataAspectRatio = [1 1 1];
-%                 axis vis3d;
-%                 hold off;
-%                 debug = 0;
-%             end
+
             if any(suppLab~=sign(suppDists))
-                warning(sprintf('Robots (%d,%d) trajectories conflict at step %d',i,j,step));
-                %DEBUG PLOT
-                % agent i is green, agent j is red.
-                % constraint should be between green/red and pointing
-                % towards red
-                close all;
-                scatter3(hull(:,1),hull(:,2),hull(:,3),'bo')
-                hold on;
-                plot3(traj_i(1,:),traj_i(2,:),traj_i(1,:),'-go','LineWidth',7)
-                plot3(traj_j(1,:),traj_j(2,:),traj_j(1,:),'-ro','LineWidth',7)
-                plotA = -currA;
-                plotb = currb;
-                buf = 2;
-                bbx = [min([traj_i(1,:),traj_j(1,:)])-buf,max([traj_i(1,:),traj_j(1,:)])+buf];
-                bby = [min([traj_i(2,:),traj_j(2,:)])-buf,max([traj_i(2,:),traj_j(2,:)])+buf];
-                bbz = [min([traj_i(3,:),traj_j(3,:)])-buf,max([traj_i(3,:),traj_j(3,:)])+buf];
-                [debx,deby,debz] = hyperplane_surf(plotA,plotb,bbx,bby,bbz,2);
-                u = plotA(1)*ones(size(debx,1),size(debx,2));
-                v = plotA(2)*ones(size(deby,1),size(deby,2));
-                ww = plotA(3)*ones(size(debz,1),size(debz,2));
-                quiver3(debx,deby,debz,u,v,ww,0.1);
-                surf(debx,deby,debz,'FaceAlpha',0.5,'FaceColor',[0.4,0.1,0.4],'edgecolor','none');
-                ax = gca;
-                xlabel('x')
-                ylabel('y')
-                zlabel('z')
-                ax.Projection = 'perspective';
-                ax.DataAspectRatioMode = 'manual';
-                ax.DataAspectRatio = [1 1 1];
-                axis vis3d;
-                hold off;
-                debug = 0;
+                warning(sprintf('Robots (%d,%d) trajectories conflict at step %d',j,i,step));
+%                 plot_constraints(traj_i,...
+%                                 traj_j,...
+%                                 hull,currA,currb);
+%                 %if plot, i is red j is green
+%                 do = input('continue: ');
             end
             
             %SHP constraint for i
             %compute conflict hull from j's perspective
             %   i's path must stay out of this hull
-            [hull] = swept_cyl_verts(cylinders(types(i),types(j),:),traj_j');
+            [hull] = swept_cyl_verts_2(cylinders(types(i),types(j),:),traj_j',hullRes);
                                  
             %vertex cloud for hull + waypoints for agent i
             pairCloud = [hull; traj_i'];
@@ -172,6 +118,11 @@ for step = 1:Nsteps
             suppLab = labels(SVM.sv_indices,:);
             if any(suppLab~=sign(suppDists))
                 warning(sprintf('Robots (%d,%d) trajectories conflict at step %d',i,j,step));
+%                 plot_constraints(traj_j,...
+%                                 traj_i,...
+%                                 hull,currA,currb);
+%                 %if plot, i is red j is green
+%                 do = input('continue: ');
             end
 
         end
