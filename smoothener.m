@@ -66,8 +66,8 @@ PLOT = true;
 ANIMATE = true;
 OBSTACLES = true;
 
-example = 'crossing2';
-%example = 'multitype';
+%example = 'crossing2';
+example = 'multitype';
 
 % ~~~~~~ deg,cont,timescale,iters input ~~~~~~
 deg = 7;
@@ -97,18 +97,22 @@ typesStruct = yaml.ReadYaml(types_file);
 
 ntypes = size(typesStruct.agentTypes);
 ntypes = ntypes(2);
+locomotion = ones(ntypes, 1) * 3;
 
 %Right now it is [rx,ry,rz] for ellipsoids
 obs_cylinders = ones(ntypes,3);
 
-% fill obs_cylinders
+% fill obs_cylinders and locomotion
 for i=1:ntypes
     shape = typesStruct.agentTypes{1,i}.shape;
     if strcmp(shape.type, "cylinder")
-        obs_cylinders(i,:) = [shape.radius, shape.radius, shape.height];
+        obs_cylinders(i,:) = [shape.radius, shape.radius, shape.height / 2];
     end
     if strcmp(shape.type, "sphere")
         obs_cylinders(i,:) = [shape.radius, shape.radius, shape.radius];
+    end
+    if contains(typesStruct.agentTypes{1,i}.type, "ground")
+        locomotion(i) = 2;
     end
 end
 
@@ -121,10 +125,10 @@ for i=1:ntypes
         for k=1:length(typesStruct.agentInteractions)
             interaction=typesStruct.agentInteractions{k};
             if strcmp(interaction.typeA, type_i) && strcmp(interaction.typeB, type_j)
-                conf_cylinders(i,j,:) = [interaction.radius, interaction.above, interaction.below];
+                conf_cylinders(i,j,:) = [interaction.radius, interaction.below, interaction.above];
             end
             if strcmp(interaction.typeA, type_j) && strcmp(interaction.typeB, type_i)
-                conf_cylinders(i,j,:) = [interaction.radius, interaction.below, interaction.above];
+                conf_cylinders(i,j,:) = [interaction.radius, interaction.above, interaction.below];
             end
         end
     end
@@ -132,16 +136,12 @@ end
 
 % fill types
 types = zeros(N, 1);
-locomotion = ones(N, 1) * 3;
 
 for n = 1:N
    for i=1:ntypes
      type = typesStruct.agentTypes{1,i}.type;
      if strcmp(typeNames{n}, type)
         types(n) = i;
-     end
-     if contains(typeNames{n}, "ground")
-        locomotion(n) = 2;
      end
    end
 end

@@ -50,7 +50,7 @@ for step = 1:Nsteps
             labels = [ones(size(hull,1),1);-1;-1];
             
             %train svm to get hyperplane
-            SVM = svmtrain(labels,pairCloud,'-c 10000 -q -t 0');
+            SVM = svmtrain(labels,pairCloud,'-c 900000 -q -t 0');
             %extract params
             suppVecs = pairCloud(SVM.sv_indices,:);
             w = SVM.sv_coef' * suppVecs;
@@ -70,7 +70,7 @@ for step = 1:Nsteps
                                 [paths(:,step,j),paths(:,step+1,j)],...
                                 hull,currA,currb);
                 i_green = [paths(:,step,i)';paths(:,step+1,i)']
-                j_red = [paths(:,step,i)';paths(:,step+1,i)']
+                j_red = [paths(:,step,j)';paths(:,step+1,j)']
                 do = input('continue: ');
             end
             
@@ -87,7 +87,7 @@ for step = 1:Nsteps
             labels = [ones(size(hull,1),1);-1;-1];
 
             %train svm to get hyperplane
-            SVM = svmtrain(labels,pairCloud,'-c 10000 -q -t 0');
+            SVM = svmtrain(labels,pairCloud,'-c 900000 -q -t 0');
 
             %hyperplane params
             suppVecs = pairCloud(SVM.sv_indices,:);
@@ -107,7 +107,7 @@ for step = 1:Nsteps
                                 [paths(:,step,i),paths(:,step+1,i)],...
                                 hull,currA,currb);
                 i_red = [paths(:,step,i)';paths(:,step+1,i)']
-                j_green = [paths(:,step,i)';paths(:,step+1,i)']
+                j_green = [paths(:,step,j)';paths(:,step+1,j)']
                 do = input('continue: ');
             end
             
