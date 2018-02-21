@@ -38,7 +38,7 @@ for step = 1:Nsteps
             %SHP constraint for j
             %compute conflict hull from i's perspective
             %   j's path must stay out of this hull
-            [hull] = swept_cyl_verts(cylinders(types(i),types(j),:),...
+            [hull] = swept_cyl_verts(cylinders(types(j),types(i),:),...
                                      [paths(:,step,i)';paths(:,step+1,i)']);
                                  
             %vertex cloud for hull + waypoints for agent j
@@ -75,8 +75,8 @@ for step = 1:Nsteps
 %             close all;
 %             scatter3(hull(:,1),hull(:,2),hull(:,3),'bo')
 %             hold on;
-%             plot3(traj_i(1,:),traj_i(2,:),traj_i(1,:),'-go','LineWidth',7)
-%             plot3(traj_j(1,:),traj_j(2,:),traj_j(1,:),'-ro','LineWidth',7)
+%             plot3(traj_i(1,:),traj_i(2,:),traj_i(3,:),'-go','LineWidth',7)
+%             plot3(traj_j(1,:),traj_j(2,:),traj_j(3,:),'-ro','LineWidth',7)
 %             plotA = -currA;
 %             plotb = currb;
 %             buf = 2;
@@ -103,7 +103,7 @@ for step = 1:Nsteps
             %SHP constraint for i
             %compute conflict hull from j's perspective
             %   i's path must stay out of this hull
-            [hull] = swept_cyl_verts(cylinders(types(j),types(i),:),...
+            [hull] = swept_cyl_verts(cylinders(types(i),types(j),:),...
                                      [paths(:,step,j)';paths(:,step+1,j)']);
 
             %vertex cloud for hull + waypoints for agent i

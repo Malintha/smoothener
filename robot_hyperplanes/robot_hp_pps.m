@@ -55,7 +55,7 @@ for step = 1:Nsteps
             if (step == 4)
                 debug = 0;
             end
-            [hull] = swept_cyl_verts(cylinders(types(i),types(j),:), traj_i');
+            [hull] = swept_cyl_verts(cylinders(types(j),types(i),:), traj_i');
                                  
             %vertex cloud for hull + waypoints for agent j
             pairCloud = [hull; traj_j'];
@@ -146,7 +146,7 @@ for step = 1:Nsteps
             %SHP constraint for i
             %compute conflict hull from j's perspective
             %   i's path must stay out of this hull
-            [hull] = swept_cyl_verts(cylinders(types(j),types(i),:),traj_j');
+            [hull] = swept_cyl_verts(cylinders(types(i),types(j),:),traj_j');
                                  
             %vertex cloud for hull + waypoints for agent i
             pairCloud = [hull; traj_i'];

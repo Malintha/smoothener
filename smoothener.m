@@ -61,51 +61,136 @@ clear; close all;
 %            0, 2,  0; ...
 %            0, 4,  0];
 
-% ~~~~~~ Plot / Animate? ~~~~~~
+% ~~~~~~ USER INPUT ~~~~~~
 PLOT = true;
 ANIMATE = true;
 
-% ~~~~~~ Env file for octomap ~~~~~~
-map = './examples/ground1/map.bt';
+% example = 'crossing2';
+% 
+% % ~~~~~~ types Input ~~~~~~
+% %1 = small, 2 = large for swap4
+% ntypes = 2;
+% types = [1;2];
+% locomotion = [3,3];
+% 
+% % ~~~~~~ conf_cylinders Input ~~~~~~
+% conf_cylinders = zeros(ntypes,ntypes,3);
+% %cylinders(i,j,1) = radius type i must stay away from type j
+% %cylinders(i,j,2) = radius type i must stay above type j
+% %cylinders(i,j,3) = radius type i must stay below type j
+% 
+% conf_cylinders(1,2,:) = [0.35,0.3,0.6];
+% conf_cylinders(2,1,:) = [0.35,0.6,0.3];
+% 
+% conf_cylinders(1,1,:) = [0.15,0.3,0.3];
+% conf_cylinders(2,2,:) = [0.25,0.5,0.5];
+% 
+% % ~~~~~~ obs_cylinders Input NOTE: CURRENTLY USING ELLIPSOIDS ~~~~~~
+% obs_cylinders = ones(ntypes,3);
+% %obs_cylinders(i,:) = [radius,above,below] for environment
+% %Right now it is [rx,ry,rz] for ellipsoids
+% obs_cylinders(1,:) = [0.15,0.15,0.15];
+% obs_cylinders(2,:) = [0.2,0.2,0.2];
 
-% ~~~~~~ STL file for plotting ~~~~~~
-stl_file = './examples/ground1/map.stl';
+% example = 'swap4';
+% 
+% % ~~~~~~ types Input ~~~~~~
+% %1 = small, 2 = large for swap4
+% ntypes = 2;
+% types = [1;1;2;2];
+% locomotion = [3,3];
+% 
+% % ~~~~~~ conf_cylinders Input ~~~~~~
+% conf_cylinders = zeros(ntypes,ntypes,3);
+% %cylinders(i,j,1) = radius type i must stay away from type j
+% %cylinders(i,j,2) = radius type i must stay above type j
+% %cylinders(i,j,3) = radius type i must stay below type j
+% 
+% conf_cylinders(1,2,:) = [0.35,0.3,0.6];
+% conf_cylinders(2,1,:) = [0.35,0.6,0.3];
+% 
+% conf_cylinders(1,1,:) = [0.15,0.3,0.3];
+% conf_cylinders(2,2,:) = [0.25,0.5,0.5];
+% 
+% % ~~~~~~ obs_cylinders Input NOTE: CURRENTLY USING ELLIPSOIDS ~~~~~~
+% obs_cylinders = ones(ntypes,3);
+% %obs_cylinders(i,:) = [radius,above,below] for environment
+% %Right now it is [rx,ry,rz] for ellipsoids
+% obs_cylinders(1,:) = [0.15,0.15,0.15];
+% obs_cylinders(2,:) = [0.2,0.2,0.2];
 
-% ~~~~~~ paths Input ~~~~~~
-[paths,names] = read_schedule('./examples/ground1/discreteSchedule.json');
-[dim, k, N] = size(paths);
-nsteps = size(paths,2)-1;
-
-% ~~~~~~ pps Output ~~~~~~
-outcsv = './examples/ground1/';
+example = 'multitype';
 
 % ~~~~~~ types Input ~~~~~~
-%1 = ground, 2 = small for ground1
-ntypes = 2;
-types = [1;1;2;2];
-locomotion = [2,3];
+%1 = small, 2 = large for swap4
+ntypes = 4;
+types = [1;2;3;4];
+locomotion = [3,3,3,2];
 
-% types = [1;2];
 % ~~~~~~ conf_cylinders Input ~~~~~~
 conf_cylinders = zeros(ntypes,ntypes,3);
 %cylinders(i,j,1) = radius type i must stay away from type j
 %cylinders(i,j,2) = radius type i must stay above type j
 %cylinders(i,j,3) = radius type i must stay below type j
 
-conf_cylinders(1,2,:) = [0.13,0.24,0.24];
-conf_cylinders(2,1,:) = [0.13,0.24,0.24];
+conf_cylinders(1,2,:) = [0.3,0.1,1.4];%small/medium
+conf_cylinders(2,1,:) = [0.3,1.4,0.1];%medium/small
 
-conf_cylinders(1,1,:) = [0.33,0.24,0.24];
-conf_cylinders(2,2,:) = [0.36,0.42,0.42];
+conf_cylinders(1,3,:) = [0.35,0.2,2.0];%small/large
+conf_cylinders(3,1,:) = [0.35,2.0,0.2];%large/small
 
-conf_cylinders = conf_cylinders*0.75;
+conf_cylinders(1,4,:) = [0.33,0.26,0.26];%small/ground
+conf_cylinders(4,1,:) = [0.33,0.26,0.26];%ground/small
+
+conf_cylinders(2,3,:) = [0.4,0.2,0.3];%medium/large
+conf_cylinders(3,2,:) = [0.4,0.2,0.3];%large/medium
+
+conf_cylinders(2,4,:) = [0.39,0.29,0.29];%medium/ground
+conf_cylinders(4,2,:) = [0.39,0.29,0.29];%ground/medium
+
+conf_cylinders(3,4,:) = [0.46,0.3,0.3];%large/ground
+conf_cylinders(4,3,:) = [0.46,0.3,0.3];%ground/large
+
+conf_cylinders(1,1,:) = [0.2,0.6,0.6]; %small vs small
+conf_cylinders(2,2,:) = [0.35,0.4,0.4]; %medium/medium
+conf_cylinders(3,3,:) = [0.5,0.4,0.4]; %large/large
+conf_cylinders(4,4,:) = [0.5,0.45,0.45]; %ground/ground
+conf_cylinders = conf_cylinders * .9;
 
 % ~~~~~~ obs_cylinders Input NOTE: CURRENTLY USING ELLIPSOIDS ~~~~~~
 obs_cylinders = ones(ntypes,3);
 %obs_cylinders(i,:) = [radius,above,below] for environment
 %Right now it is [rx,ry,rz] for ellipsoids
-obs_cylinders(1,:) = [0.15,0.15,0.15];
-obs_cylinders(2,:) = [0.18,0.18,0.18];
+obs_cylinders(1,:) = [0.08,0.08,0.06];
+obs_cylinders(2,:) = [0.14,0.14,0.12];
+obs_cylinders(3,:) = [0.21,0.15,0.15];
+obs_cylinders(4,:) = [0.25,0.45,0.45];
+
+% ~~~~~~ deg,cont,timescale,iters input ~~~~~~
+deg = 7;
+cont = 4;
+timescale = 1;
+iters = 4;
+Neval = 32; %number of samples on pps separation
+
+% ~~~~~~ END USER INPUT ~~~~~~~~~~~~
+
+% ~~~~~~ Env file for octomap ~~~~~~
+folder = '..';
+map = strcat(folder, '/examples/', example, '/map.bt');
+
+% ~~~~~~ STL file for plotting ~~~~~~
+stl_file = strcat(folder, '/examples/', example, '/output/map.stl');
+
+% ~~~~~~ paths Input ~~~~~~
+schedule_file = strcat(folder, '/examples/', example, '/output/discreteSchedule.json');
+[paths,names] = read_schedule(schedule_file);
+[dim, k, N] = size(paths);
+nsteps = size(paths,2)-1;
+
+% ~~~~~~ pps Output ~~~~~~
+outcsv = strcat(folder, '/examples/', example, '/output/pps/');
+
 %hack for ellipsoid input to octomap separation function
 obs_ellipsoids = zeros(N,3);
 for n = 1:N
@@ -123,16 +208,9 @@ bbox = read_octomap_bbox_mex(map);
 %         min(min(paths(2,:,:))) - bbbuffer,max(max(paths(2,:,:)) + bbbuffer);...
 %         min(min(paths(3,:,:))) - bbbuffer,max(max(paths(3,:,:)) + bbbuffer)];
     
-% ~~~~~~ deg,cont,timescale,iters input ~~~~~~
-deg = 7;
-cont = 4;
-timescale = 1;
-iters = 2;
-Neval = 64; %number of samples on pps separation
-
 % ~~~~~~ pp obstacle separation function ~~~~~~
-pp_obs_sep_fun = @(poly,elip) pp_obs_sep_octomap(poly,elip,map);
-% pp_obs_sep_fun = @pp_obs_sep_none;
+% pp_obs_sep_fun = @(poly,elip) pp_obs_sep_octomap(poly,elip,map);
+pp_obs_sep_fun = @pp_obs_sep_none;
 
 %% Smoothener
 [dim, k, N] = size(paths);
