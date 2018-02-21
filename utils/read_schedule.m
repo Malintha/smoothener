@@ -1,7 +1,7 @@
 % read a schedule from Wolfgang's discrete planner
 % into a [3 x Kpts x Nrobots] waypoint array
 %
-function [paths,names] = read_schedule(fname)
+function [paths,names,types] = read_schedule(fname)
 	json = loadjson(fname);
 	N = length(json.agents);
 	k = 0;
@@ -10,6 +10,7 @@ function [paths,names] = read_schedule(fname)
 	end
 	paths = nan(3,k,N);
     names = cell(N,1);
+    types = cell(N,1);
 	for i=1:N
         %get path
 		p = json.agents{i}.path;
@@ -25,6 +26,8 @@ function [paths,names] = read_schedule(fname)
         end
         %get name
         names{i} = json.agents{i}.name;
+        %get type
+        types{i} = json.agents{i}.type;
 	end
 	assert(~any(isnan(paths(:))));
 end

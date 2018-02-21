@@ -65,106 +65,8 @@ clear; close all;
 PLOT = true;
 ANIMATE = true;
 
-% example = 'crossing2';
-% 
-% % ~~~~~~ types Input ~~~~~~
-% %1 = small, 2 = large for swap4
-% ntypes = 2;
-% types = [1;2];
-% locomotion = [3,3];
-% 
-% % ~~~~~~ conf_cylinders Input ~~~~~~
-% conf_cylinders = zeros(ntypes,ntypes,3);
-% %cylinders(i,j,1) = radius type i must stay away from type j
-% %cylinders(i,j,2) = radius type i must stay above type j
-% %cylinders(i,j,3) = radius type i must stay below type j
-% 
-% conf_cylinders(1,2,:) = [0.35,0.3,0.6];
-% conf_cylinders(2,1,:) = [0.35,0.6,0.3];
-% 
-% conf_cylinders(1,1,:) = [0.15,0.3,0.3];
-% conf_cylinders(2,2,:) = [0.25,0.5,0.5];
-% 
-% % ~~~~~~ obs_cylinders Input NOTE: CURRENTLY USING ELLIPSOIDS ~~~~~~
-% obs_cylinders = ones(ntypes,3);
-% %obs_cylinders(i,:) = [radius,above,below] for environment
-% %Right now it is [rx,ry,rz] for ellipsoids
-% obs_cylinders(1,:) = [0.15,0.15,0.15];
-% obs_cylinders(2,:) = [0.2,0.2,0.2];
-
-% example = 'swap4';
-% 
-% % ~~~~~~ types Input ~~~~~~
-% %1 = small, 2 = large for swap4
-% ntypes = 2;
-% types = [1;1;2;2];
-% locomotion = [3,3];
-% 
-% % ~~~~~~ conf_cylinders Input ~~~~~~
-% conf_cylinders = zeros(ntypes,ntypes,3);
-% %cylinders(i,j,1) = radius type i must stay away from type j
-% %cylinders(i,j,2) = radius type i must stay above type j
-% %cylinders(i,j,3) = radius type i must stay below type j
-% 
-% conf_cylinders(1,2,:) = [0.35,0.3,0.6];
-% conf_cylinders(2,1,:) = [0.35,0.6,0.3];
-% 
-% conf_cylinders(1,1,:) = [0.15,0.3,0.3];
-% conf_cylinders(2,2,:) = [0.25,0.5,0.5];
-% 
-% % ~~~~~~ obs_cylinders Input NOTE: CURRENTLY USING ELLIPSOIDS ~~~~~~
-% obs_cylinders = ones(ntypes,3);
-% %obs_cylinders(i,:) = [radius,above,below] for environment
-% %Right now it is [rx,ry,rz] for ellipsoids
-% obs_cylinders(1,:) = [0.15,0.15,0.15];
-% obs_cylinders(2,:) = [0.2,0.2,0.2];
-
-example = 'multitype';
-
-% ~~~~~~ types Input ~~~~~~
-%1 = small, 2 = large for swap4
-ntypes = 4;
-types = [1;2;3;4];
-locomotion = [3,3,3,2];
-
-% ~~~~~~ conf_cylinders Input ~~~~~~
-conf_cylinders = zeros(ntypes,ntypes,3);
-%cylinders(i,j,1) = radius type i must stay away from type j
-%cylinders(i,j,2) = radius type i must stay above type j
-%cylinders(i,j,3) = radius type i must stay below type j
-
-conf_cylinders(1,2,:) = [0.3,0.1,1.4];%small/medium
-conf_cylinders(2,1,:) = [0.3,1.4,0.1];%medium/small
-
-conf_cylinders(1,3,:) = [0.35,0.2,2.0];%small/large
-conf_cylinders(3,1,:) = [0.35,2.0,0.2];%large/small
-
-conf_cylinders(1,4,:) = [0.33,0.26,0.26];%small/ground
-conf_cylinders(4,1,:) = [0.33,0.26,0.26];%ground/small
-
-conf_cylinders(2,3,:) = [0.4,0.2,0.3];%medium/large
-conf_cylinders(3,2,:) = [0.4,0.2,0.3];%large/medium
-
-conf_cylinders(2,4,:) = [0.39,0.29,0.29];%medium/ground
-conf_cylinders(4,2,:) = [0.39,0.29,0.29];%ground/medium
-
-conf_cylinders(3,4,:) = [0.46,0.3,0.3];%large/ground
-conf_cylinders(4,3,:) = [0.46,0.3,0.3];%ground/large
-
-conf_cylinders(1,1,:) = [0.2,0.6,0.6]; %small vs small
-conf_cylinders(2,2,:) = [0.35,0.4,0.4]; %medium/medium
-conf_cylinders(3,3,:) = [0.5,0.4,0.4]; %large/large
-conf_cylinders(4,4,:) = [0.5,0.45,0.45]; %ground/ground
-conf_cylinders = conf_cylinders * .9;
-
-% ~~~~~~ obs_cylinders Input NOTE: CURRENTLY USING ELLIPSOIDS ~~~~~~
-obs_cylinders = ones(ntypes,3);
-%obs_cylinders(i,:) = [radius,above,below] for environment
-%Right now it is [rx,ry,rz] for ellipsoids
-obs_cylinders(1,:) = [0.08,0.08,0.06];
-obs_cylinders(2,:) = [0.14,0.14,0.12];
-obs_cylinders(3,:) = [0.21,0.15,0.15];
-obs_cylinders(4,:) = [0.25,0.45,0.45];
+example = 'crossing2';
+%example = 'multitype';
 
 % ~~~~~~ deg,cont,timescale,iters input ~~~~~~
 deg = 7;
@@ -184,9 +86,64 @@ stl_file = strcat(folder, '/examples/', example, '/output/map.stl');
 
 % ~~~~~~ paths Input ~~~~~~
 schedule_file = strcat(folder, '/examples/', example, '/output/discreteSchedule.json');
-[paths,names] = read_schedule(schedule_file);
+[paths,names,typeNames] = read_schedule(schedule_file);
 [dim, k, N] = size(paths);
 nsteps = size(paths,2)-1;
+
+% ~~~~~ read types ~~~~~~
+types_file = strcat(folder, '/examples/', example, '/types.yaml');
+typesStruct = yaml.ReadYaml(types_file);
+
+ntypes = size(typesStruct.agentTypes);
+ntypes = ntypes(2);
+
+%Right now it is [rx,ry,rz] for ellipsoids
+obs_cylinders = ones(ntypes,3);
+
+% fill obs_cylinders
+for i=1:ntypes
+    shape = typesStruct.agentTypes{1,i}.shape;
+    if strcmp(shape.type, "cylinder")
+        obs_cylinders(i,:) = [shape.radius, shape.radius, shape.height];
+    end
+    if strcmp(shape.type, "sphere")
+        obs_cylinders(i,:) = [shape.radius, shape.radius, shape.radius];
+    end
+end
+
+% fill conf_cylinders
+conf_cylinders = zeros(ntypes,ntypes,3);
+for i=1:ntypes
+    for j=1:ntypes
+        type_i = typesStruct.agentTypes{1,i}.type;
+        type_j = typesStruct.agentTypes{1,j}.type;
+        for k=1:length(typesStruct.agentInteractions)
+            interaction=typesStruct.agentInteractions{k};
+            if strcmp(interaction.typeA, type_i) && strcmp(interaction.typeB, type_j)
+                conf_cylinders(i,j,:) = [interaction.radius, interaction.above, interaction.below];
+            end
+            if strcmp(interaction.typeA, type_j) && strcmp(interaction.typeB, type_i)
+                conf_cylinders(i,j,:) = [interaction.radius, interaction.below, interaction.above];
+            end
+        end
+    end
+end
+
+% fill types
+types = zeros(N, 1);
+locomotion = ones(N, 1) * 3;
+
+for n = 1:N
+   for i=1:ntypes
+     type = typesStruct.agentTypes{1,i}.type;
+     if strcmp(typeNames{n}, type)
+        types(n) = i;
+     end
+     if contains(typeNames{n}, "ground")
+        locomotion(n) = 2;
+     end
+   end
+end
 
 % ~~~~~~ pps Output ~~~~~~
 outcsv = strcat(folder, '/examples/', example, '/output/pps/');
