@@ -47,10 +47,6 @@ for step = 1:Nsteps
             %labels for cloud, 1 for robot i, -1 for j
             labels = [ones(size(hull,1),1);-1;-1];
             
-            %DEEEEEEEEEEEEEEBBBBBBUUUUUUUUUUUGGGGGGGGGGGg
-%             pairCloud = [paths(:,step,i)';paths(:,step+1,i)'; paths(:,step,j)';paths(:,step+1,j)'];
-%             labels = [1;1;-1;-1];
-            
             %train svm to get hyperplane
             SVM = svmtrain(labels,pairCloud,'-c 10000 -q -t 0');
             %extract params
@@ -63,20 +59,45 @@ for step = 1:Nsteps
             stepA(:,j,i) = currA;
             stepb(j,i) = currb;
             
+            %sanity check for inseperable case
+            suppDists = suppVecs * currA' - currb;
+            suppLab = labels(SVM.sv_indices,:);
+            if any(suppLab~=sign(suppDists))
+                warning(sprintf('Robots (%d,%d) paths conflict at step %d',i,j,step));
+            end
+            
             %DEEEEEEEEEEEEEBBBBBBBBBBBBUUUUUUUUUUUGGGGGGGGGGGGG
-%             close all
-%             scatter3(hull(:,1),hull(:,2),hull(:,3),'go')
+%             traj_i = [paths(:,step,i)';paths(:,step+1,i)']';
+%             traj_j = [paths(:,step,j)';paths(:,step+1,j)']';
+%             % agent i is green, agent j is red.
+%             % constraint should be between green/red and pointing
+%             % towards red
+%             close all;
+%             scatter3(hull(:,1),hull(:,2),hull(:,3),'bo')
 %             hold on;
-%             plot3([paths(1,step,i);paths(1,step+1,i)],[paths(2,step,i)';paths(2,step+1,i)],[paths(3,step,i)';paths(3,step+1,i)],'-go')
-%             plot3([paths(1,step,j);paths(1,step+1,j)],[paths(2,step,j)';paths(2,step+1,j)],[paths(3,step,j)';paths(3,step+1,j)],'-ro')
+%             plot3(traj_i(1,:),traj_i(2,:),traj_i(1,:),'-go','LineWidth',7)
+%             plot3(traj_j(1,:),traj_j(2,:),traj_j(1,:),'-ro','LineWidth',7)
 %             plotA = -currA;
 %             plotb = currb;
-%             [debx,deby,debz] = hyperplane_surf(plotA,plotb,[-5,5],[-5,5],[-1,3],2);
+%             buf = 2;
+%             bbx = [min([traj_i(1,:),traj_j(1,:)])-buf,max([traj_i(1,:),traj_j(1,:)])+buf];
+%             bby = [min([traj_i(2,:),traj_j(2,:)])-buf,max([traj_i(2,:),traj_j(2,:)])+buf];
+%             bbz = [min([traj_i(3,:),traj_j(3,:)])-buf,max([traj_i(3,:),traj_j(3,:)])+buf];
+%             [debx,deby,debz] = hyperplane_surf(plotA,plotb,bbx,bby,bbz,2);
 %             u = plotA(1)*ones(size(debx,1),size(debx,2));
 %             v = plotA(2)*ones(size(deby,1),size(deby,2));
 %             ww = plotA(3)*ones(size(debz,1),size(debz,2));
 %             quiver3(debx,deby,debz,u,v,ww,0.1);
-%             surf(debx,deby,debz,'FaceAlpha',0.5,'FaceColor',[0.5,0.1,0.4],'edgecolor','none');
+%             surf(debx,deby,debz,'FaceAlpha',0.5,'FaceColor',[0.4,0.1,0.4],'edgecolor','none');
+%             ax = gca;
+%             xlabel('x')
+%             ylabel('y')
+%             zlabel('z')
+%             ax.Projection = 'perspective';
+%             ax.DataAspectRatioMode = 'manual';
+%             ax.DataAspectRatio = [1 1 1];
+%             axis vis3d;
+%             hold off;
 %             debug = 0;
             
             %SHP constraint for i
@@ -103,25 +124,14 @@ for step = 1:Nsteps
             stepA(:,i,j) = currA;
             stepb(i,j) = currb;
             
+            %sanity check for inseperable case
+            suppDists = suppVecs * currA' - currb;
+            suppLab = labels(SVM.sv_indices,:);
+            if any(suppLab~=sign(suppDists))
+                warning(sprintf('Robots (%d,%d) paths conflict at step %d',i,j,step));
+            end
+            
             %DEEEEEEEEEEEEEBBBBBBBBBBBBUUUUUUUUUUUGGGGGGGGGGGGG
-%             scatter3(hull(:,1),hull(:,2),hull(:,3),'ro')
-%             plotA = -currA;
-%             plotb = currb;
-%             [debx,deby,debz] = hyperplane_surf(plotA,plotb,[-5,5],[-5,5],[-1,3],2);
-%             u = plotA(1)*ones(size(debx,1),size(debx,2));
-%             v = plotA(2)*ones(size(deby,1),size(deby,2));
-%             ww = plotA(3)*ones(size(debz,1),size(debz,2));
-%             quiver3(debx,deby,debz,u,v,ww,0.1);
-%             surf(debx,deby,debz,'FaceAlpha',0.5,'FaceColor',[0.1,0.5,0.4],'edgecolor','none');
-%             ax = gca;
-%             xlabel('x')
-%             ylabel('y')
-%             zlabel('z')
-%             ax.Projection = 'perspective';
-%             ax.DataAspectRatioMode = 'manual';
-%             ax.DataAspectRatio = [1 1 1];
-%             axis vis3d;
-%             debug = 0;
             
         end
     end
