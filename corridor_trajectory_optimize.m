@@ -105,7 +105,7 @@ function [pp, cost] = corridor_trajectory_optimize(...
 		interior_pt = (path(:,step) + path(:,step+1)) ./ 2;
 		[Astep,bstep] = noredund(Astep,bstep,interior_pt);
         
-%         if (id == 4 && iter == 1 && step == 14)
+%         if (id == 2)
 %             for d = 1:size(bstep)
 %                 [debx,deby,debz] = hyperplane_surf(-Astep(d,:),bstep(d),[-5,5],[-1,7],[-1,7],2);
 %                 u = -Astep(d,1)*ones(size(debx,1),size(debx,2));
@@ -175,8 +175,9 @@ function [pp, cost] = corridor_trajectory_optimize(...
 	Q = kron(eye(steps), piece_cost);
 	Q = Q + Q'; % matlab complains, but error is small. TODO track down source.
 
-	options = optimoptions('quadprog', 'Display', 'off');
-	options.TolCon = options.TolCon / 10;
+	options = optimoptions('quadprog', 'Display', 'off'); % 'or 'final' for more details
+    %options.ConstraintTolerance = 1e-3;
+    % options.MaxIterations = 1000;
 
 	% DEBUGGING INFEASIBLE
 	%x_ineq = linprog(zeros(1,nvars), Aineq, bineq);
@@ -187,9 +188,10 @@ function [pp, cost] = corridor_trajectory_optimize(...
 	if exist('cplexqp')
 		[x, cost] = cplexqp(Q, zeros(1,nvars), Aineq, bineq, Aeq, beq, lb, ub);
 	else
-		[x, cost] = quadprog(sparse(Q), zeros(1,nvars), ...
+		[x, cost, exitflag] = quadprog(sparse(Q), zeros(1,nvars), ...
 			sparse(Aineq), sparse(bineq), sparse(Aeq), sparse(beq), ...
 			lb, ub, [], options);
+        assert(exitflag == 1, 'Infeasible Solution');
 	end
 
 	% x is [dim, ctrlpoint, piece] - want [dim, piece, degree]

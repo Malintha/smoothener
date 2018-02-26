@@ -67,8 +67,9 @@ ANIMATE = true;
 OBSTACLES = true;
 
 %example = 'crossing2';
-example = 'multitype';
-
+%example = 'multitype';
+example = 'warehouse';
+%example = 'swapMulti';
 % ~~~~~~ deg,cont,timescale,iters input ~~~~~~
 deg = 7;
 cont = 4;
@@ -90,6 +91,10 @@ schedule_file = strcat(folder, '/examples/', example, '/output/discreteSchedule.
 [paths,names,typeNames] = read_schedule(schedule_file);
 [dim, k, N] = size(paths);
 nsteps = size(paths,2)-1;
+
+% plot3(paths(1,:,1),paths(2,:,1),paths(3,:,1))
+% hold on
+% plot3(paths(1,:,2),paths(2,:,2),paths(3,:,2))
 
 % ~~~~~ read types ~~~~~~
 types_file = strcat(folder, '/examples/', example, '/types.yaml');
@@ -115,6 +120,8 @@ for i=1:ntypes
         locomotion(i) = 2;
     end
 end
+
+%obs_cylinders = obs_cylinders * 0.5;
 
 % fill conf_cylinders
 conf_cylinders = zeros(ntypes,ntypes,3);
@@ -217,7 +224,7 @@ for iter=1:iters
     pps = cell(1,N);
     iter_costs = zeros(1,N);
     % parfor
-    for j=1:N
+    parfor j=1:N
         fprintf(' agent %d of %d...\n', j, N);
         lb = bbox(:,1) + [obs_cylinders(types(j),1);obs_cylinders(types(j),1);obs_cylinders(types(j),3)];
         ub = bbox(:,2) - [obs_cylinders(types(j),1);obs_cylinders(types(j),1);obs_cylinders(types(j),2)];
