@@ -1,40 +1,43 @@
-% read a schedule from Wolfgang's discrete planner
+% read a schedule from discrete planner (yaml file)
 % into a [3 x Kpts x Nrobots] waypoint array
 %
 function [paths,names,types] = read_schedule(fname, read_agents)
-	json = loadjson(fname);
- 
-    if ~exist('read_agents','var')
-        read_agents = 1:length(json.agents);
+   
+    yamlData = yaml.ReadYaml(fname);
+    
+    % find number of agents
+    agents = fieldnames(yamlData.schedule);
+    N = numel(agents);
+    
+    % find total timesteps
+    k = 0;
+    for i=1:N
+        T = size(yamlData.schedule.(agents{i}), 2);
+        k = max(k, T);
     end
     
-    N = length(read_agents);
- 
-	k = 0;
-	for i=read_agents
-		k = max(k, length(json.agents{i}.path));
-	end
-	paths = nan(3,k,N);
+    paths = nan(3,k,N);
     names = cell(N,1);
     types = cell(N,1);
     iprime = 1;
-	for i=read_agents
+	for i=1:N
         %get path
-		p = json.agents{i}.path;
-		len = length(p);
+		p = yamlData.schedule.(agents{i});
+		len = size(p, 2);
         for j=1:len
-            paths(1,j,iprime) = str2num(p{j}.x);
-            paths(2,j,iprime) = str2num(p{j}.y);
-            paths(3,j,iprime) = str2num(p{j}.z);
+            paths(1,j,iprime) = p{j}.x + 0.5;
+            paths(2,j,iprime) = p{j}.y + 0.5;
+            %paths(3,j,iprime) = p{j}.z;
+            paths(3,j,iprime) = 0.5;
         end
         
         for j=(len+1):k
             paths(:,j,iprime) = paths(:,len,iprime);
         end
         %get name
-        names{iprime} = json.agents{i}.name;
+        names{iprime} = agents{i};
         %get type
-        types{iprime} = json.agents{i}.type;
+        types{iprime} = 'ground';
         
         iprime = iprime + 1;
 	end

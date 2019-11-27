@@ -68,8 +68,9 @@ OBSTACLES = true;
 
 %example = 'crossing2';
 %example = 'multitype';
-example = 'warehouse';
+%example = 'warehouse';
 %example = 'swapMulti';
+example = 'ground';
 % ~~~~~~ deg,cont,timescale,iters input ~~~~~~
 deg = 7;
 cont = 4;
@@ -87,7 +88,7 @@ map = strcat(folder, '/examples/', example, '/map.bt');
 stl_file = strcat(folder, '/examples/', example, '/output/map.stl');
 
 % ~~~~~~ paths Input ~~~~~~
-schedule_file = strcat(folder, '/examples/', example, '/output/discreteSchedule.json');
+schedule_file = strcat(folder, '/examples/', example, '/output/discreteSchedule.yaml');
 [paths,names,typeNames] = read_schedule(schedule_file);
 [dim, k, N] = size(paths);
 nsteps = size(paths,2)-1;
