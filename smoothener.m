@@ -62,8 +62,8 @@ clear; close all;
 %            0, 4,  0];
 
 % ~~~~~~ USER INPUT ~~~~~~
-PLOT = true;
-ANIMATE = true;
+PLOT = false;
+ANIMATE = false;
 OBSTACLES = true;
 
 %example = 'crossing2';
@@ -73,9 +73,9 @@ OBSTACLES = true;
 example = 'ground';
 % ~~~~~~ deg,cont,timescale,iters input ~~~~~~
 deg = 7;
-cont = 4;
-timescale = 1;
-iters = 4;
+cont = 1;%4;
+timescale = 1.0;
+iters = 8;
 Neval = 32; %number of samples on pps separation
 
 % ~~~~~~ END USER INPUT ~~~~~~~~~~~~
@@ -224,6 +224,7 @@ for iter=1:iters
     tic;
     pps = cell(1,N);
     iter_costs = zeros(1,N);
+    
     % parfor
     parfor j=1:N
         fprintf(' agent %d of %d...\n', j, N);
@@ -237,8 +238,8 @@ for iter=1:iters
 
         Aobs = nan(dim, max_n_faces, k-1);
         bobs = nan(max_n_faces, k-1);
-        Arobots = squeeze(A(:,j,:,:));
-        brobots = squeeze(b(j,:,:));
+        Arobots = A(:,j,:,:); %squeeze(A(:,j,:,:));
+        brobots = b(j,:,:);%squeeze(b(j,:,:));
         for i=1:(k-1)
             n_faces = step_n_faces(i);
             hs_slice_step = hs_slice{i};
@@ -251,7 +252,6 @@ for iter=1:iters
             Aobs, bobs, ...
             lb, ub,...
             paths(:,:,j), deg, cont, timescale, obs_cylinders(types(j),:),j,iter,locomotion(types(j)));%[0.2 0.2 0.4], [0.2 0.2 0.2]);%
-
         s = [];
         s.Arobots = Arobots;
         s.brobots = brobots;
@@ -259,6 +259,12 @@ for iter=1:iters
         s.bobs = bobs;
         all_corridors{iter,j} = s;
     end
+    
+    if isnan(sum(iter_costs))
+        pps = all_pps(iter-1,:);
+        break;
+    end
+    
     t_splines = toc;
     fprintf('splines: %f sec\n', t_splines);
     fprintf('total: %f sec\n', t_hyperplanes + t_splines);
@@ -339,6 +345,9 @@ if (ANIMATE)
         pause(0.033);
     end
 end
+
+if (PLOT)
 hold off;
+end
 
 

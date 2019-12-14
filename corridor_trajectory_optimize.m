@@ -28,7 +28,23 @@ function [pp, cost] = corridor_trajectory_optimize(...
 	init = path(:,1);
 	goal = path(:,end);
 	order = deg + 1;
-
+    
+    goalStep = steps;
+    for i=steps+1:-1:1
+        if norm(path(:,i) - goal) < 1e-3
+           goalStep = i;
+        else
+            break;
+        end 
+    end
+    
+    goalStep = goalStep - 1;
+    
+    %if id == 7 || id == 10
+    %    goalStep = 3;
+    %end      
+      
+    
 	%ellipsoid = diag(ellipsoid);
     %for now just use ellipsoid for robot/env specification
 	obs_ellipsoid = diag(obs_cylinder);
@@ -147,7 +163,8 @@ function [pp, cost] = corridor_trajectory_optimize(...
 			end
 		end
 
-		if step == steps
+		%if step == steps
+        if step >= goalStep
 			% goal position and 0 derivatives
 			Aeq = [Aeq; kron(eye(dim), t1 * bern') * dim_collect];
 			beq = [beq; goal];
@@ -191,18 +208,25 @@ function [pp, cost] = corridor_trajectory_optimize(...
 		[x, cost, exitflag] = quadprog(sparse(Q), zeros(1,nvars), ...
 			sparse(Aineq), sparse(bineq), sparse(Aeq), sparse(beq), ...
 			lb, ub, [], options);
-        assert(exitflag == 1, 'Infeasible Solution');
-	end
+        if exitflag ~= 1
+            warning('Infeasible Solution');
+            cost = nan;
+            pp = nan;
+        end
+        %assert(exitflag == 1, 'Infeasible Solution');
+    end
 
-	% x is [dim, ctrlpoint, piece] - want [dim, piece, degree]
-	x = reshape(x, [dim*order, steps]);
-	coefs = [];
-	for piece=1:steps
-		xx = reshape(dim_collect_one_step * x(:,piece), [order dim]);
-		piece_coefs = bern' * xx; % [order dim]
-		coefs = cat(2, coefs, reshape(piece_coefs', [dim 1 order]));
-	end
+    if exitflag == 1
+        % x is [dim, ctrlpoint, piece] - want [dim, piece, degree]
+        x = reshape(x, [dim*order, steps]);
+        coefs = [];
+        for piece=1:steps
+            xx = reshape(dim_collect_one_step * x(:,piece), [order dim]);
+            piece_coefs = bern' * xx; % [order dim]
+            coefs = cat(2, coefs, reshape(piece_coefs', [dim 1 order]));
+        end
 
-	breaks = timescale * (0:steps);
-	pp = mkpp(breaks, coefs, dim);
+        breaks = timescale * (0:steps);
+        pp = mkpp(breaks, coefs, dim);
+    end
 end
