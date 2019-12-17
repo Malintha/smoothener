@@ -238,8 +238,13 @@ for iter=1:iters
 
         Aobs = nan(dim, max_n_faces, k-1);
         bobs = nan(max_n_faces, k-1);
-        Arobots = A(:,j,:,:); %squeeze(A(:,j,:,:));
-        brobots = b(j,:,:);%squeeze(b(j,:,:));
+        if N == 1
+            Arobots = A(:,j,:,:); %squeeze(A(:,j,:,:));
+            brobots = b(j,:,:);%squeeze(b(j,:,:));
+        else
+            Arobots = squeeze(A(:,j,:,:));
+            brobots = squeeze(b(j,:,:));
+        end
         for i=1:(k-1)
             n_faces = step_n_faces(i);
             hs_slice_step = hs_slice{i};
