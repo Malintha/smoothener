@@ -75,7 +75,13 @@ end
 if ~all(A*c < b) % exclude exterior and also boundary points
     opts = optimset('display', 'off');
     [c, ~, flag] = linprog(0*A(1,:), A, b, [], [], [], [], [], opts);
-    assert(flag == 1);
+    if flag ~= 1
+        warning('noredund flag not 1!');
+        An = A;
+        bn = b;
+        return;
+    end    
+    %assert(flag == 1);
     %{
     [c,f,ef] = fminsearch(@obj,c,'params',{A,b});
     if ef ~= 1
