@@ -66,12 +66,12 @@ for step = 1:Nsteps
             suppLab = labels(SVM.sv_indices,:);
             if any(suppLab~=sign(suppDists))
                 warning(sprintf('Robots (%d,%d) paths conflict at step %d',j,i,step));
-                plot_constraints([paths(:,step,i),paths(:,step+1,i)],...
-                                [paths(:,step,j),paths(:,step+1,j)],...
-                                hull,currA,currb);
-                i_green = [paths(:,step,i)';paths(:,step+1,i)']
-                j_red = [paths(:,step,j)';paths(:,step+1,j)']
-                do = input('continue: ');
+                % plot_constraints([paths(:,step,i),paths(:,step+1,i)],...
+                %                 [paths(:,step,j),paths(:,step+1,j)],...
+                %                 hull,currA,currb);
+                % i_green = [paths(:,step,i)';paths(:,step+1,i)']
+                % j_red = [paths(:,step,j)';paths(:,step+1,j)']
+                % do = input('continue: ');
             end
             
             %SHP constraint for i
@@ -103,12 +103,12 @@ for step = 1:Nsteps
             suppLab = labels(SVM.sv_indices,:);
             if any(suppLab~=sign(suppDists))
                 warning(sprintf('Robots (%d,%d) paths conflict at step %d',i,j,step));
-                plot_constraints([paths(:,step,j),paths(:,step+1,j)],...
-                                [paths(:,step,i),paths(:,step+1,i)],...
-                                hull,currA,currb);
-                i_red = [paths(:,step,i)';paths(:,step+1,i)']
-                j_green = [paths(:,step,j)';paths(:,step+1,j)']
-                do = input('continue: ');
+                % plot_constraints([paths(:,step,j),paths(:,step+1,j)],...
+                %                 [paths(:,step,i),paths(:,step+1,i)],...
+                %                 hull,currA,currb);
+                % i_red = [paths(:,step,i)';paths(:,step+1,i)']
+                % j_green = [paths(:,step,j)';paths(:,step+1,j)']
+                % do = input('continue: ');
             end
             
             

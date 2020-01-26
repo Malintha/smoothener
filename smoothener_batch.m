@@ -195,6 +195,10 @@ function smoothener_batch(map, schedule_file, types_file, outcsv)
         end
         
         if isnan(sum(iter_costs))
+            if iter == 1
+                display('Failure on first iteration! Exiting...');
+                exit;
+            end
             pps = all_pps(iter-1,:);
             break;
         end
