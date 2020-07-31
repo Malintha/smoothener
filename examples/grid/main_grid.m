@@ -3,7 +3,7 @@
 function main_grid()
 
 % scale of the discrete plan's integer grid in meters
-SCALE = 0.5;
+SCALE = 1;
 
 % the duration of each step in the discrete plan, in seconds
 TIMESCALE = 0.25;

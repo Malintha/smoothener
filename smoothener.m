@@ -91,7 +91,7 @@ function [all_pps, all_costs, all_corridors] = smoothener(...
 		pps = cell(1,N);
 		iter_costs = zeros(1,N);
 		% parfor
-		parfor j=1:N
+		for j=1:N
 			hs_slice = squeeze(hs(j,:));
 			step_n_faces = cellfun(@(a) size(a, 1), hs_slice);
 			assert(length(step_n_faces) == (k-1));

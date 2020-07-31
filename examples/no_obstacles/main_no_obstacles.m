@@ -3,7 +3,7 @@
 function main_no_obstacles()
 
 % the duration of each step in the discrete plan, in seconds
-TIMESCALE = 0.25;
+TIMESCALE = 3;
 
 % read input file
 discrete_plan_file = 'examples/no_obstacles/warehouse4.json';
@@ -13,8 +13,8 @@ s = read_schedule(discrete_plan_file);
 % make a padded bounding box around the schedule
 all_pts = reshape(s, 3, []);
 bbox = zeros(3,2);
-bbox(:,1) = min(all_pts, [], 2) - 0.5;
-bbox(:,2) = max(all_pts, [], 2) + 0.5;
+bbox(:,1) = min(all_pts, [], 2) - 0.2;
+bbox(:,2) = max(all_pts, [], 2) + 0.2;
 
 % print some info about the discrete plan input
 analyze_schedule(s);
@@ -24,7 +24,7 @@ analyze_schedule(s);
 s = s(:,:,1:N);
 
 % add extra stationary steps at begin and end for smooth acceleration
-s = cat(2, s(:,1,:), s(:,1,:), s, s(:,end,:));
+% s = cat(2, s(:,1,:), s(:,1,:), s, s(:,end,:));
 
 % polynomial degree
 deg = 7;
